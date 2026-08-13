@@ -502,7 +502,7 @@
     let myId = '';
     let isHost = false;
     let myPlayerIndex = 0; // 0: P1(ホスト), 1: P2, 2: P3
-    let connections = [];  // ホスト用コネクションリスト
+    let connections = [];  // ホスト用コネクションリスト [P2_conn, P3_conn]
     let hostConn = null;   // ゲスト用ホストコネクション
 
     peer.on('open', (id) => {
@@ -549,7 +549,6 @@
     peer.on('connection', (conn) => {
       if (!isHost) return;
       
-      // コネクションの登録管理を修正
       connections.push(conn);
       const assignedIndex = connections.length; // 1(P2) or 2(P3)
       setupConnection(conn, assignedIndex);
@@ -609,6 +608,12 @@
               setTimeout(processPassCards, 500);
             }
           }
+          break;
+
+        case 'DRAFT_PICKED_CARD':
+          // 各自が個別に獲得カードを受け取る
+          myPickedCards.push(data.payload.card);
+          updateUI();
           break;
 
         case 'UPDATE_READY_STATUS':
@@ -707,7 +712,7 @@
     let currentHands = [[], [], []];
     let selectedIndices = [null, null, null];
     let isReady = [false, false, false];
-    let myPickedCards = []; // 各プレイヤー自身の獲得カード保持変数（固定から自プレイヤー連動に修正）
+    let myPickedCards = []; // 各操作プレイヤーの獲得カード一覧
     let deckReadyPlayers = [false, false, false];
 
     let poolCards = [];
@@ -841,19 +846,34 @@
     }
 
     function processPassCards() {
-      // プレイヤーそれぞれが選んだカードを獲得一覧に追加（操作プレイヤー自身のリストに追加）
+      // 1. 各プレイヤーがピックしたカードを個別に配分通知する
       for (let i = 0; i < 3; i++) {
-        const picked = currentHands[i][selectedIndices[i]];
-        if (i === myPlayerIndex) {
-          myPickedCards.push(picked);
+        const pickedCard = currentHands[i][selectedIndices[i]];
+        if (i === 0) {
+          // ホスト自身（P1）
+          myPickedCards.push(pickedCard);
+        } else {
+          // ゲストプレイヤー（P2, P3）へ個別送信
+          const targetConn = connections[i - 1];
+          if (targetConn && targetConn.open) {
+            targetConn.send({
+              type: 'DRAFT_PICKED_CARD',
+              payload: { card: pickedCard }
+            });
+          }
         }
+      }
+
+      // 2. パックからピックしたカードを取り除く
+      for (let i = 0; i < 3; i++) {
         currentHands[i].splice(selectedIndices[i], 1);
       }
 
-      // パックを右へ移動 (0->1, 1->2, 2->0)
+      // 3. パックを右方向へ回転移動 (P3->P1, P1->P2, P2->P3)
       const nextHands = [currentHands[2], currentHands[0], currentHands[1]];
       currentHands = nextHands;
 
+      // 4. ラウンド更新またはデッキ構築フェーズへの移行
       if (currentHands[0].length === 0) {
         if (currentRound < 3) {
           currentRound++;
