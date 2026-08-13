@@ -182,13 +182,19 @@
     .mana-card.tapped { transform: rotate(90deg); }
 
     .dummy-card { width: 60px; height: 84px; background: #334155; border: 2px solid #94a3b8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; text-align: center; word-break: break-all; padding: 2px; }
-    .placed-card { position: absolute; cursor: pointer; z-index: 10; }
+    .placed-card { position: absolute; cursor: pointer; z-index: 10; transition: transform 0.1s ease; }
     .card-face-down { background: #0f172a !important; border-color: #475569 !important; color: #64748b !important; }
     
     .orient-p0 { border-color: #818cf8; }
     .orient-p1 { border-color: #38bdf8; }
     .orient-p2 { border-color: #f43f5e; }
+    
+    /* 視点・タップ表示用クラス */
+    .card-rot-right { transform: rotate(90deg); }
+    .card-rot-left { transform: rotate(-90deg); }
     .card-tapped { transform: rotate(90deg); }
+    .card-rot-right.card-tapped { transform: rotate(180deg); }
+    .card-rot-left.card-tapped { transform: rotate(0deg); }
 
     .left-action-zone { width: 100%; padding: 6px; border: 1px dashed #475569; border-radius: 6px; text-align: center; font-size: 10px; }
     #score-add-zone { border-color: #38bdf8; background: #0369a1; color: #e0f2fe; }
@@ -661,6 +667,9 @@
         case 'MOVE_BOARD_CARD':
           moveBoardCardLocal(data.payload);
           break;
+        case 'CHANGE_CARD_OWNER':
+          changeCardOwnerLocal(data.payload);
+          break;
         case 'REMOVE_BOARD_CARD':
           removeBoardCardLocal(data.payload.id);
           break;
@@ -1023,7 +1032,7 @@
 
     let graveyards = { p0: [], p1: [], p2: [] };
     let currentGyTab = 'p0';
-    let highestZIndex = 100;
+    let highestZIndex = 1000;
     let manaList = [];
     const COLOR_ORDER = { 'red': 1, 'yellow': 2, 'blue': 3, 'purple': 4 };
 
@@ -1053,6 +1062,34 @@
       for (let i = 0; i < 4; i++) drawCard();
 
       setupSnapBars();
+
+      // 共有エリアと手札エリアのドロップ受け取り設定
+      const table = document.getElementById('zone-table');
+      table.ondragover = (e) => e.preventDefault();
+      table.ondrop = (e) => {
+        e.preventDefault();
+        const cardName = e.dataTransfer.getData('text/plain');
+        if (!cardName) return;
+        const tableRect = table.getBoundingClientRect();
+        const cardId = `card_sync_${myPlayerIndex}_${Date.now()}`;
+        broadcast({
+          type: 'SYNC_BOARD_CARD',
+          payload: { id: cardId, cardName: cardName, ownerIndex: myPlayerIndex, x: e.clientX - tableRect.left - 30, y: e.clientY - tableRect.top - 42, isFaceDown: false }
+        });
+      };
+
+      const handArea = document.getElementById('bottom-hand-panel');
+      handArea.ondragover = (e) => e.preventDefault();
+      handArea.ondrop = (e) => {
+        e.preventDefault();
+        const cardSyncId = e.dataTransfer.getData('boardCardId');
+        const cardName = e.dataTransfer.getData('boardCardName');
+        if (cardSyncId) {
+          removeBoardCardLocal(cardSyncId);
+          broadcast({ type: 'REMOVE_BOARD_CARD', payload: { id: cardSyncId } });
+          addCardToHand(cardName);
+        }
+      };
     }
 
     function updateScoreDisplay() {
@@ -1274,6 +1311,10 @@
       const card = document.createElement('div');
       card.className = 'dummy-card hand-card';
       card.innerHTML = `<span>手札</span><b>${cardName}</b>`;
+      card.draggable = true;
+      card.ondragstart = (e) => {
+        e.dataTransfer.setData('text/plain', cardName);
+      };
       attachHoverPreview(card, cardName, '自分の手札');
 
       const faceDownBtn = document.createElement('button');
@@ -1337,6 +1378,14 @@
       addCardToHand(drawnCard);
     }
 
+    // 時計回りの位置関係に基づく相対位置判定 ('self', 'right', 'left')
+    function getRelativePlayerPosition(ownerIndex, viewerIndex) {
+      const diff = (ownerIndex - viewerIndex + 3) % 3;
+      if (diff === 0) return 'self';
+      if (diff === 1) return 'right';
+      return 'left';
+    }
+
     function syncBoardCardLocal(data) {
       let card = document.getElementById(data.id);
       const table = document.getElementById('zone-table');
@@ -1348,8 +1397,14 @@
         table.appendChild(card);
       }
 
+      card.setAttribute('data-owner-index', data.ownerIndex);
       card.setAttribute('data-owner', `P${data.ownerIndex + 1}`);
       card.setAttribute('data-card-name', data.cardName);
+
+      const relPos = getRelativePlayerPosition(data.ownerIndex, myPlayerIndex);
+      card.classList.remove('card-rot-right', 'card-rot-left');
+      if (relPos === 'right') card.classList.add('card-rot-right');
+      else if (relPos === 'left') card.classList.add('card-rot-left');
 
       if (data.isFaceDown) {
         card.classList.add('card-face-down');
@@ -1379,6 +1434,14 @@
       }
     }
 
+    function changeCardOwnerLocal(data) {
+      const card = document.getElementById(data.id);
+      if (card) {
+        data.ownerIndex = data.newOwnerIndex;
+        syncBoardCardLocal(data);
+      }
+    }
+
     function removeBoardCardLocal(id) {
       const card = document.getElementById(id);
       if (card) card.remove();
@@ -1388,9 +1451,18 @@
       let isMoved = false;
       let clickTimer = null, clickCount = 0;
 
+      card.ondragstart = (e) => {
+        e.dataTransfer.setData('boardCardId', cardSyncId);
+        e.dataTransfer.setData('boardCardName', cardName);
+      };
+
       card.onmousedown = (e) => {
         previewBox.style.display = 'none';
         isMoved = false;
+
+        // ドラッグ中は常に最も手前（最前面）に移動
+        highestZIndex += 1;
+        card.style.zIndex = highestZIndex;
 
         let startX = e.clientX, startY = e.clientY;
         let cardRect = card.getBoundingClientRect();
@@ -1423,7 +1495,6 @@
             if (clickCount === 1) {
               clickTimer = setTimeout(() => {
                 const isTapped = card.classList.toggle('card-tapped');
-                const tableRect = container.getBoundingClientRect();
                 broadcast({
                   type: 'MOVE_BOARD_CARD',
                   payload: { id: cardSyncId, x: parseInt(card.style.left), y: parseInt(card.style.top), isTapped: isTapped }
@@ -1432,10 +1503,20 @@
               }, 250);
             } else if (clickCount === 2) {
               clearTimeout(clickTimer);
-              card.classList.remove('card-face-down');
-              card.innerHTML = `<span>P${myPlayerIndex + 1}</span><b>${cardName}</b>`;
-              card.setAttribute('data-is-facedown', 'false');
               clickCount = 0;
+
+              // ダブルクリックで自分の所有カードへ変更
+              const currentOwner = parseInt(card.getAttribute('data-owner-index'));
+              if (currentOwner !== myPlayerIndex) {
+                broadcast({
+                  type: 'CHANGE_CARD_OWNER',
+                  payload: { id: cardSyncId, cardName: cardName, newOwnerIndex: myPlayerIndex, x: parseInt(card.style.left), y: parseInt(card.style.top), isFaceDown: card.getAttribute('data-is-facedown') === 'true' }
+                });
+              } else {
+                card.classList.remove('card-face-down');
+                card.innerHTML = `<span>P${myPlayerIndex + 1}</span><b>${cardName}</b>`;
+                card.setAttribute('data-is-facedown', 'false');
+              }
             }
             return;
           }
