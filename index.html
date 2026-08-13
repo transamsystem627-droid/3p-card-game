@@ -32,6 +32,15 @@
     }
     .btn-primary:hover { background: #4f46e5; }
     .btn-primary:disabled { background: #475569; cursor: not-allowed; }
+    
+    /* コピー用ボタンのスタイル */
+    .btn-copy {
+      padding: 4px 10px; border: none; border-radius: 4px; background: #38bdf8;
+      color: #0f172a; font-size: 11px; font-weight: bold; cursor: pointer;
+      transition: 0.2s; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .btn-copy:hover { background: #7dd3fc; }
+
     .lobby-status { margin-top: 15px; font-size: 13px; color: #94a3b8; }
 
     /* Header Styles */
@@ -232,7 +241,10 @@
   <div id="lobby-view">
     <div class="lobby-card">
       <div class="lobby-title">🎮 3人対戦 オンラインロビー</div>
-      <p style="font-size:12px; color:#cbd5e1;">あなたのID: <b id="my-peer-id" style="color:#38bdf8;">発行中...</b></p>
+      <p style="font-size:12px; color:#cbd5e1; display:flex; align-items:center; justify-content:center;">
+        あなたのID: <b id="my-peer-id" style="color:#38bdf8; margin-left:4px;">発行中...</b>
+        <button id="btn-copy-id" class="btn-copy" onclick="copyMyId()">コピー</button>
+      </p>
       
       <div style="margin: 20px 0;">
         <button id="btn-create-room" class="btn-primary" onclick="createRoom()" style="width:100%;">ホストとして部屋を作成</button>
@@ -497,6 +509,24 @@
       myId = id;
       document.getElementById('my-peer-id').innerText = id;
     });
+
+    // IDをコピーする関数
+    function copyMyId() {
+      if (!myId || myId === '発行中...') return;
+      navigator.clipboard.writeText(myId).then(() => {
+        const btn = document.getElementById('btn-copy-id');
+        btn.innerText = 'コピーしました！';
+        btn.style.background = '#10b981';
+        btn.style.color = '#fff';
+        setTimeout(() => {
+          btn.innerText = 'コピー';
+          btn.style.background = '#38bdf8';
+          btn.style.color = '#0f172a';
+        }, 2000);
+      }).catch(err => {
+        alert('コピーに失敗しました: ' + err);
+      });
+    }
 
     function createRoom() {
       isHost = true;
