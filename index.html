@@ -2,248 +2,1514 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>カードドラフト - UI描画修正版</title>
+  <title>トリニティドラフト ＆ 対戦モード統合版（3人オンライン同期）</title>
+  <!-- PeerJS の読み込み -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #0f172a; color: #fff; height: 100vh; display: flex; flex-direction: column; padding: 10px; position: relative; overflow: hidden; }
+
+    /* ロビー画面 */
+    #lobby-view {
+      position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #0f172a; z-index: 10000; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 20px;
     }
-    body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      background-color: #f0f2f5;
-      color: #333;
-      padding: 20px;
+    .lobby-card {
+      background: #1e293b; border: 2px solid #6366f1; border-radius: 12px;
+      padding: 30px; width: 100%; max-width: 480px; text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    header {
-      text-align: center;
-      margin-bottom: 20px;
+    .lobby-title { font-size: 22px; font-weight: bold; color: #38bdf8; margin-bottom: 20px; }
+    .input-group { margin: 15px 0; display: flex; gap: 8px; justify-content: center; }
+    input[type="text"] {
+      padding: 10px; width: 65%; border-radius: 6px; border: 1px solid #475569;
+      background: #0f172a; color: #fff; font-size: 14px;
     }
-    .main-container {
-      display: flex;
-      gap: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
+    .btn-primary {
+      padding: 10px 18px; border: none; border-radius: 6px; background: #6366f1;
+      color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s;
     }
-    /* 左側：ドラフト領域 */
-    .draft-area {
-      flex: 3;
-      background: #ffffff;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-primary:disabled { background: #475569; cursor: not-allowed; }
+    
+    /* コピー用ボタンのスタイル */
+    .btn-copy {
+      padding: 4px 10px; border: none; border-radius: 4px; background: #38bdf8;
+      color: #0f172a; font-size: 11px; font-weight: bold; cursor: pointer;
+      transition: 0.2s; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px;
     }
-    .player-turn-indicator {
-      font-size: 1.2rem;
-      font-weight: bold;
-      margin-bottom: 15px;
-      padding: 10px;
-      background-color: #e8f4ff;
-      border-left: 5px solid #007bff;
-      border-radius: 4px;
+    .btn-copy:hover { background: #7dd3fc; }
+
+    .lobby-status { margin-top: 15px; font-size: 13px; color: #94a3b8; }
+
+    /* Header Styles */
+    #header-bar {
+      background: #1e293b; border: 2px solid #6366f1; border-radius: 8px;
+      padding: 8px 16px; display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); flex-shrink: 0;
     }
-    .card-pool {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin-top: 15px;
+    .status-title { font-size: 16px; font-weight: bold; color: #38bdf8; }
+    .status-info { font-size: 13px; color: #cbd5e1; display: flex; gap: 16px; }
+    .status-badge { background: #334155; padding: 4px 8px; border-radius: 4px; border: 1px solid #475569; }
+
+    .view-stage { display: flex; gap: 12px; flex: 1; min-height: 0; }
+
+    /* Phase 1: Draft View */
+    #pack-section {
+      flex: 3; background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+      padding: 12px; display: flex; flex-direction: column; min-height: 0;
     }
-    /* 右側：獲得カード一覧 */
-    .sidebar {
-      flex: 1;
-      background: #ffffff;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
+    .section-title { font-size: 13px; color: #94a3b8; margin-bottom: 6px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+    #pack-cards {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 8px; flex: 1; overflow-y: auto; padding: 4px;
     }
-    .sidebar h2 {
-      font-size: 1.1rem;
-      border-bottom: 2px solid #ddd;
-      padding-bottom: 8px;
-      margin-bottom: 15px;
+
+    #sidebar-section { flex: 1.2; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+    .panel-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; min-height: 0; }
+    .player-status-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+    .player-status-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
+    .ready-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .tag-waiting { background: #475569; color: #94a3b8; }
+    .tag-ready { background: #10b981; color: #fff; }
+
+    #picked-cards-container { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    #picked-cards {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 6px; flex: 1; overflow-y: auto; padding: 4px; background: #0f172a; border: 1px solid #334155; border-radius: 6px;
     }
-    .drafted-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      overflow-y: auto;
-      max-height: 500px;
+
+    /* Phase 2: Deck Builder View */
+    #deck-builder-view { display: none; width: 100%; height: 100%; }
+    #pool-section { flex: 1.2; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; min-height: 0; }
+    #pool-cards {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); grid-auto-rows: max-content;
+      gap: 6px; flex: 1; overflow-y: auto; background: #0f172a; padding: 6px; border-radius: 6px; border: 1px solid #334155; align-content: start;
     }
-    /* カードコンポーネント */
-    .card {
-      background: #fff;
-      border: 2px solid #ccc;
-      border-radius: 6px;
-      padding: 15px;
-      width: 120px;
-      text-align: center;
-      cursor: pointer;
-      transition: transform 0.1s, border-color 0.1s;
-      user-select: none;
+
+    #decks-section { flex: 2; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+    .deck-drop-zone {
+      flex: 1; background: #1e293b; border: 2px dashed #475569; border-radius: 8px; padding: 8px;
+      display: flex; flex-direction: column; min-height: 0; transition: border-color 0.2s, background 0.2s;
     }
-    .card:hover {
-      transform: translateY(-3px);
-      border-color: #007bff;
+    .deck-drop-zone.drag-over { border-color: #38bdf8; background: #334155; }
+    .deck-card-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); grid-auto-rows: max-content;
+      gap: 6px; flex: 1; overflow-y: auto; background: #0f172a; padding: 6px; border-radius: 6px; align-content: start;
     }
-    .card-mini {
-      background: #f8f9fa;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 8px 12px;
-      font-size: 0.9rem;
+
+    #special-card-section { flex: 1; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; min-height: 0; }
+    #special-card-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 6px; }
+
+    /* Card Items UI */
+    .card-item {
+      width: 100%; height: 100px; background: linear-gradient(145deg, #334155, #1e293b); border: 2px solid #64748b;
+      border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 4px; cursor: pointer; user-select: none; transition: border-color 0.15s, transform 0.15s; text-align: center;
     }
-    .empty-msg {
-      color: #888;
-      font-size: 0.85rem;
-      font-style: italic;
+    .card-item:hover { border-color: #38bdf8; transform: translateY(-2px); }
+    .card-item.selected { border-color: #f59e0b !important; background: linear-gradient(145deg, #1e293b, #78350f) !important; }
+    .card-name { font-size: 10px; font-weight: bold; margin-top: 4px; color: #fff; word-break: break-all; }
+    .card-type { font-size: 8px; color: #38bdf8; }
+
+    .special-card-item {
+      height: 110px; background: linear-gradient(145deg, #1e1b4b, #311042); border: 2px solid #a855f7; border-radius: 6px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px; cursor: pointer; text-align: center;
     }
+    .special-card-item.active { border-color: #f59e0b !important; box-shadow: 0 0 12px rgba(245, 158, 11, 0.8); background: linear-gradient(145deg, #581c87, #78350f); }
+
+    .action-btn {
+      width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 6px;
+      font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .action-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; }
+
+    #pass-notice {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(15, 23, 42, 0.95); border: 2px solid #38bdf8; border-radius: 12px;
+      padding: 20px 32px; text-align: center; font-size: 18px; font-weight: bold; color: #38bdf8; display: none; z-index: 1000;
+    }
+
+    #hover-preview-card {
+      position: fixed; width: 380px; height: 520px; background: linear-gradient(145deg, #1e293b, #0f172a);
+      border: 4px solid #38bdf8; border-radius: 16px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
+      display: none; pointer-events: none; z-index: 3000; padding: 20px; flex-direction: column; justify-content: space-between;
+    }
+    .preview-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 10px; }
+    .preview-type { font-size: 18px; color: #38bdf8; font-weight: bold; }
+    .preview-id { font-size: 14px; color: #64748b; }
+    .preview-title { font-size: 26px; font-weight: bold; color: #fff; margin-top: 10px; text-align: center; }
+    .preview-image-box { flex: 1; margin: 15px 0; background: #020617; border: 2px solid #334155; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #475569; font-size: 18px; font-weight: bold; }
+    .preview-desc { font-size: 15px; color: #cbd5e1; line-height: 1.4; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155; }
+
+    /* Phase 3: Battle View */
+    #battle-view { display: none; height: 100%; flex-direction: column; }
+    #play-field { display: flex; flex-direction: column; gap: 8px; height: 100%; }
+
+    #score-bar {
+      display: flex; justify-content: space-around; align-items: center; background: #020617;
+      border: 2px solid #6366f1; border-radius: 8px; padding: 6px 16px; box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
+    }
+    .score-group { display: flex; align-items: center; gap: 12px; font-size: 12px; }
+    .score-p-title { font-weight: bold; font-size: 13px; }
+    .score-p1-title { color: #818cf8; }
+    .score-p2-title { color: #38bdf8; }
+    .score-p3-title { color: #f43f5e; }
+    .score-box { display: flex; align-items: center; gap: 4px; background: #1e293b; padding: 2px 8px; border-radius: 4px; border: 1px solid #475569; }
+    .score-label { color: #94a3b8; font-size: 10px; }
+    .score-val { font-size: 15px; font-weight: bold; color: #38bdf8; }
+    
+    #opponents-panel { display: flex; justify-content: space-around; background: #0f172a; padding: 6px; border-radius: 8px; border: 1px solid #334155; }
+    .opponent-box { background: #1e293b; padding: 4px 10px; border-radius: 6px; font-size: 11px; line-height: 1.3; }
+
+    #main-board { display: grid; grid-template-columns: 180px 1fr 220px; gap: 8px; flex: 1; min-height: 0; }
+    .zone { border: 2px dashed #475569; border-radius: 8px; padding: 6px; background: #0f172a; position: relative; }
+    .zone-title { font-size: 11px; color: #94a3b8; text-align: center; }
+
+    button.game-btn { padding: 4px 8px; background: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; }
+    button.game-btn:hover { background: #6366f1; }
+    #refresh-btn { background: #10b981; margin-top: 4px; width: 100%; display: none; }
+    #refresh-btn:hover { background: #059669; }
+
+    #mana-zone { border-color: #3b82f6; background: #091e3a; height: 110px; position: relative; overflow: hidden; }
+    .mana-btn { padding: 2px 6px; font-size: 10px; border-radius: 3px; border: none; color: white; cursor: pointer; }
+    .mana-card { width: 42px; height: 60px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: move; user-select: none; position: absolute; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 5; }
+    .mana-red { background: #ef4444; color: #fff; }
+    .mana-yellow { background: #eab308; color: #000; }
+    .mana-blue { background: #3b82f6; color: #fff; }
+    .mana-purple { background: #a855f7; color: #fff; }
+    .mana-card.tapped { transform: rotate(90deg); }
+
+    .dummy-card { width: 60px; height: 84px; background: #334155; border: 2px solid #94a3b8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; text-align: center; word-break: break-all; padding: 2px; }
+    .placed-card { position: absolute; cursor: pointer; z-index: 10; }
+    .card-face-down { background: #0f172a !important; border-color: #475569 !important; color: #64748b !important; }
+    
+    .orient-p0 { border-color: #818cf8; }
+    .orient-p1 { border-color: #38bdf8; }
+    .orient-p2 { border-color: #f43f5e; }
+    .card-tapped { transform: rotate(90deg); }
+
+    .left-action-zone { width: 100%; padding: 6px; border: 1px dashed #475569; border-radius: 6px; text-align: center; font-size: 10px; }
+    #score-add-zone { border-color: #38bdf8; background: #0369a1; color: #e0f2fe; }
+    #deck-return-zone { border-color: #ef4444; background: #2c1215; color: #fca5a5; }
+    #graveyard-zone { border-color: #8b5cf6; background: #2e1065; color: #ddd6fe; cursor: pointer; }
+
+    #bottom-hand-panel { height: 125px; background: #0f172a; border: 2px dashed #10b981; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; }
+    #hand-cards { display: flex; gap: 8px; overflow-x: auto; flex: 1; align-items: center; padding-top: 2px; }
+    .hand-card-wrapper { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+
+    #side-container { position: fixed; right: 10px; top: 75px; width: 220px; height: calc(100vh - 90px); display: flex; flex-direction: column; gap: 8px; z-index: 200; pointer-events: none; }
+    .tray-panel { background: rgba(15, 23, 42, 0.95); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; pointer-events: auto; }
+    .tray-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; padding-right: 2px; align-items: center; }
+
+    #deck-search-panel { border: 2px solid #0ea5e9; height: 35%; display: none; }
+    #graveyard-tray { border: 2px solid #8b5cf6; flex: 1; }
+
+    .grid-container { position: absolute; display: flex; border: 2px dashed #334155; border-radius: 6px; background: rgba(15, 23, 42, 0.4); pointer-events: none; z-index: 1; }
+    .grid-box { width: 60px; height: 84px; border-right: 1px dashed #334155; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #475569; }
+    .grid-box:last-child { border-right: none; }
+    
+    #top-grid { top: 25px; left: 50%; transform: translateX(-50%); }
+    #left-grid { bottom: 15px; left: 15px; }
+    #right-grid { bottom: 15px; right: 15px; }
+
+    .movable-bar { position: absolute; width: 6px; height: 90px; background: #38bdf8; border-radius: 3px; cursor: col-resize; z-index: 20; box-shadow: 0 0 8px rgba(56, 189, 248, 0.6); }
+    .bar-controls { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 25; }
+    .bar-arrow-btn { width: 18px; height: 18px; background: #0284c7; color: #fff; border: 1px solid #38bdf8; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; user-select: none; }
+
+    .counter-box { margin-top: 4px; padding: 4px; background: #1e1b4b; border: 1px solid #6366f1; border-radius: 6px; text-align: center; }
+    .counter-btn { width: 22px; height: 22px; padding: 0; font-weight: bold; font-size: 12px; border-radius: 4px; background: #4f46e5; color: #fff; border: none; cursor: pointer; }
+
+    #life-reveal-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(6px); }
+    #modal-card { width: 240px; height: 336px; background: linear-gradient(145deg, #1e293b, #0f172a); border: 4px solid #38bdf8; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 20px; text-align: center; }
+    #modal-card-source { font-size: 14px; color: #38bdf8; margin-bottom: 12px; font-weight: bold; }
+    #modal-card-title { font-size: 24px; color: #fff; font-weight: bold; word-break: break-all; }
+
+    #cursor-hover-preview {
+      position: fixed; width: 220px; height: 300px; background: linear-gradient(145deg, #1e293b, #0f172a);
+      border: 3px solid #38bdf8; border-radius: 12px; pointer-events: none; z-index: 999999; display: none;
+      flex-direction: column; align-items: center; justify-content: center; padding: 12px; text-align: center;
+    }
+    #preview-owner { font-size: 13px; color: #38bdf8; margin-bottom: 8px; font-weight: bold; }
+    #preview-name { font-size: 20px; font-weight: bold; color: #fff; word-break: break-all; }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>カードドラフト</h1>
-  </header>
+  <!-- 【ロビー画面】 PeerJS 接続用 -->
+  <div id="lobby-view">
+    <div class="lobby-card">
+      <div class="lobby-title">🎮 3人対戦 オンラインロビー</div>
+      <p style="font-size:12px; color:#cbd5e1; display:flex; align-items:center; justify-content:center;">
+        あなたのID: <b id="my-peer-id" style="color:#38bdf8; margin-left:4px;">発行中...</b>
+        <button id="btn-copy-id" class="btn-copy" onclick="copyMyId()">コピー</button>
+      </p>
+      
+      <div style="margin: 20px 0;">
+        <button id="btn-create-room" class="btn-primary" onclick="createRoom()" style="width:100%;">ホストとして部屋を作成</button>
+      </div>
+      
+      <p style="font-size:12px; color:#64748b;">または</p>
+      
+      <div class="input-group">
+        <input type="text" id="host-id-input" placeholder="ホストのIDを入力">
+        <button class="btn-primary" onclick="joinRoom()">参加する</button>
+      </div>
 
-  <div class="main-container">
-    <!-- 左側: 現在のターンとプール -->
-    <main class="draft-area">
-      <div id="player-indicator" class="player-turn-indicator">
-        <!-- JSで描画 -->
-      </div>
-      <h3>ピック可能なカード:</h3>
-      <div id="card-pool" class="card-pool">
-        <!-- JSで描画 -->
-      </div>
-    </main>
+      <div id="lobby-status" class="lobby-status">接続を待機しています...</div>
+    </div>
+  </div>
 
-    <!-- 右側: 現在の操作プレイヤーが獲得したカード一覧 -->
-    <aside class="sidebar">
-      <h2 id="sidebar-title">獲得カード一覧</h2>
-      <div id="drafted-list" class="drafted-list">
-        <!-- JSで描画 -->
+  <!-- ドラフト・デッキ構築ヘッダー -->
+  <div id="header-bar">
+    <div class="status-title" id="phase-title">🃏 ドラフトフェーズ</div>
+    <div class="status-info" id="draft-status-info">
+      <div class="status-badge">ラウンド: <span id="round-num" style="color:#f59e0b; font-weight:bold;">1</span> / 3</div>
+      <div class="status-badge">ピック: <span id="pick-num" style="color:#38bdf8; font-weight:bold;">1</span> / 13</div>
+      <div class="status-badge">残パック: <span id="remaining-packs" style="color:#10b981; font-weight:bold;">6</span></div>
+    </div>
+    <div class="status-info" id="deck-status-info" style="display:none;">
+      <div class="status-badge">メイン: <span id="main-count" style="color:#f59e0b; font-weight:bold;">0</span> / 23</div>
+      <div class="status-badge">プール残: <span id="life-count" style="color:#38bdf8; font-weight:bold;">39</span> / 16</div>
+    </div>
+  </div>
+
+  <!-- 【フェーズ1】ドラフト画面 -->
+  <div id="draft-view" class="view-stage">
+    <div id="pack-section">
+      <div class="section-title">
+        <span>手元のパック（1枚選択して決定を押してください）</span>
+        <span id="pack-count-label" style="color:#38bdf8;">残 13 枚</span>
       </div>
-    </aside>
+      <div id="pack-cards"></div>
+      <button id="confirm-btn" class="action-btn" disabled onclick="confirmPick()">カードを選択してください</button>
+    </div>
+
+    <div id="sidebar-section">
+      <div class="panel-box">
+        <div class="section-title" style="margin:0;">全プレイヤーの決定状況</div>
+        <div class="player-status-list">
+          <div class="player-status-item">
+            <span>プレイヤー 1 (P1)</span>
+            <span id="p1-status" class="ready-tag tag-waiting">選択中</span>
+          </div>
+          <div class="player-status-item">
+            <span>プレイヤー 2 (P2)</span>
+            <span id="p2-status" class="ready-tag tag-waiting">選択中...</span>
+          </div>
+          <div class="player-status-item">
+            <span>プレイヤー 3 (P3)</span>
+            <span id="p3-status" class="ready-tag tag-waiting">選択中...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-box" id="picked-cards-container">
+        <div class="section-title">獲得カード (<span id="picked-count">0</span>/39)</div>
+        <div id="picked-cards"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 【フェーズ2】デッキ構築画面 -->
+  <div id="deck-builder-view" class="view-stage">
+    <div id="pool-section">
+      <div class="section-title">
+        <span>獲得カードプール</span>
+        <span id="pool-count" style="color:#38bdf8;">39枚</span>
+      </div>
+      <div id="pool-cards"></div>
+    </div>
+
+    <div id="decks-section">
+      <div class="deck-drop-zone" id="main-deck-zone" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="handleDrop(event, 'main')">
+        <div class="section-title">
+          <span>メインデッキ（クリックまたはドラッグで追加）</span>
+          <span style="color:#f59e0b;"><span id="main-deck-num">0</span> / 23 枚</span>
+        </div>
+        <div class="deck-card-grid" id="main-deck-cards"></div>
+      </div>
+    </div>
+
+    <div id="special-card-section">
+      <div class="section-title">独立カード（1枚選択）</div>
+      <div id="special-card-list"></div>
+      <div style="flex:1;"></div>
+      <button id="start-game-btn" class="action-btn" disabled onclick="confirmDeckReady()">対戦準備完了</button>
+    </div>
+  </div>
+
+  <!-- 【フェーズ3】対戦モード画面 -->
+  <div id="battle-view">
+    <div id="play-field">
+      <div id="score-bar">
+        <div class="score-group">
+          <span class="score-p-title score-p2-title">◀ P2</span>
+          <div class="score-box"><span class="score-label">トリニティ:</span><span id="p2-trinity-val" class="score-val">0</span></div>
+          <div class="score-box"><span class="score-label">獲得ライフ:</span><span id="p2-card-score" class="score-val" style="color:#e0f2fe;">0</span></div>
+        </div>
+        <div class="score-group">
+          <span class="score-p-title score-p1-title">★ あなた (P<span id="my-role-num">1</span>) [<span id="active-sp-card-name" style="color:#f59e0b;">独立未選択</span>]</span>
+          <div class="score-box"><span class="score-label">トリニティ:</span><span id="p1-trinity-val" class="score-val">0</span></div>
+          <div class="score-box"><span class="score-label">獲得ライフ:</span><span id="p1-card-score" class="score-val" style="color:#e0f2fe;">0</span></div>
+        </div>
+        <div class="score-group">
+          <span class="score-p-title score-p3-title">P3 ▶</span>
+          <div class="score-box"><span class="score-label">トリニティ:</span><span id="p3-trinity-val" class="score-val">0</span></div>
+          <div class="score-box"><span class="score-label">獲得ライフ:</span><span id="p3-card-score" class="score-val" style="color:#e0f2fe;">0</span></div>
+        </div>
+      </div>
+
+      <div id="opponents-panel">
+        <div class="opponent-box"><strong>P2</strong> — 山札:<span id="p2-deck-count">23</span> | 墓地:<span id="p2-gy-count">0</span></div>
+        <div class="opponent-box"><strong>P3</strong> — 山札:<span id="p3-deck-count">23</span> | 墓地:<span id="p3-gy-count">0</span></div>
+      </div>
+
+      <div id="main-board">
+        <div style="display: flex; flex-direction: column; gap: 6px; overflow-y: auto;">
+          <div class="zone">
+            <div class="zone-title" id="deck-title">メイン (<span id="deck-count">23</span>)</div>
+            <button class="game-btn" onclick="drawCard()" style="width:100%; margin-top:4px;">1枚引く</button>
+            <button id="refresh-btn" class="game-btn" onclick="refreshDeck()">墓地を戻してリフレッシュ</button>
+            <button class="game-btn" style="width:100%; margin-top:2px;" onclick="toggleDeckSearch()">検索</button>
+          </div>
+          
+          <div class="zone" style="cursor:pointer;" onclick="revealLifeCard('left')">
+            <div class="zone-title">左ライフ (<span id="left-life-count">8</span>)<br><small style="color:#38bdf8;">めくる</small></div>
+          </div>
+          <div class="zone" style="cursor:pointer;" onclick="revealLifeCard('right')">
+            <div class="zone-title">右ライフ (<span id="right-life-count">8</span>)<br><small style="color:#f43f5e;">めくる</small></div>
+          </div>
+          
+          <div class="zone">
+            <div class="zone-title">マナ生成</div>
+            <div style="display:flex; gap:2px; justify-content:center; margin-top:4px;">
+              <button class="mana-btn" style="background:#ef4444;" onclick="spawnMana('red')">赤</button>
+              <button class="mana-btn" style="background:#eab308; color:#000;" onclick="spawnMana('yellow')">黄</button>
+              <button class="mana-btn" style="background:#3b82f6;" onclick="spawnMana('blue')">青</button>
+              <button class="mana-btn" style="background:#a855f7;" onclick="spawnMana('purple')">紫</button>
+            </div>
+
+            <div class="counter-box">
+              <div style="font-size:10px; color:#c7d2fe; margin-bottom:2px;">トリニティ</div>
+              <div style="display:flex; gap:8px; align-items:center; justify-content:center;">
+                <button class="counter-btn" onclick="updateTrinity(-1)">−</button>
+                <span id="counter-num" style="font-size:14px; font-weight:bold; color:#fff;">0</span>
+                <button class="counter-btn" onclick="updateTrinity(1)">＋</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="left-action-zone" id="score-add-zone"><b>★獲得ライフに追加</b></div>
+          <div class="left-action-zone" id="deck-return-zone"><b>デッキ還元ゾーン</b></div>
+          <div class="left-action-zone" id="graveyard-zone"><b>自分の墓地 (<span id="gy-count">0</span>)</b></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div class="zone" id="zone-table" style="flex: 1; position:relative; overflow:hidden;">
+            <div class="zone-title">共有プレイエリア</div>
+            
+            <div id="top-grid" class="grid-container">
+              <div class="grid-box">1</div><div class="grid-box">2</div><div class="grid-box">3</div><div class="grid-box">4</div>
+            </div>
+            <div id="left-grid" class="grid-container">
+              <div class="grid-box">L1</div><div class="grid-box">L2</div><div class="grid-box">L3</div><div class="grid-box">L4</div>
+            </div>
+            <div id="right-grid" class="grid-container">
+              <div class="grid-box">R1</div><div class="grid-box">R2</div><div class="grid-box">R3</div><div class="grid-box">R4</div>
+            </div>
+
+            <div id="bar-top" class="movable-bar">
+              <div class="bar-controls">
+                <div class="bar-arrow-btn arrow-left">◀</div><div class="bar-arrow-btn arrow-right">▶</div>
+              </div>
+            </div>
+            <div id="bar-left" class="movable-bar">
+              <div class="bar-controls">
+                <div class="bar-arrow-btn arrow-left">◀</div><div class="bar-arrow-btn arrow-right">▶</div>
+              </div>
+            </div>
+            <div id="bar-right" class="movable-bar">
+              <div class="bar-controls">
+                <div class="bar-arrow-btn arrow-left">◀</div><div class="bar-arrow-btn arrow-right">▶</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="zone" id="mana-zone">
+            <div class="zone-title">自分のマナゾーン</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="bottom-hand-panel">
+        <div class="zone-title" style="margin:0; text-align:left; color:#10b981; font-weight:bold;">手札（ドロップで戻す）</div>
+        <div id="hand-cards"></div>
+      </div>
+    </div>
+
+    <div id="side-container">
+      <div id="deck-search-panel" class="tray-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <span style="font-size:11px; color:#38bdf8; font-weight:bold;">デッキ内検索 (ランダム表示)</span>
+          <button class="game-btn" onclick="toggleDeckSearch()" style="padding:0 4px; background:#334155;">✕</button>
+        </div>
+        <div id="deck-search-list" class="tray-list"></div>
+      </div>
+
+      <div id="graveyard-tray" class="tray-panel">
+        <div style="font-size:11px; color:#a78bfa; margin-bottom:4px; text-align:center; font-weight:bold;">墓地一覧</div>
+        <div style="display:flex; gap:2px; margin-bottom:6px;">
+          <button class="game-btn" onclick="switchGyTab('p0')" id="gy-tab-p0" style="flex:1; font-size:9px; background:#4f46e5;">P1</button>
+          <button class="game-btn" onclick="switchGyTab('p1')" id="gy-tab-p1" style="flex:1; font-size:9px; background:#334155;">P2</button>
+          <button class="game-btn" onclick="switchGyTab('p2')" id="gy-tab-p2" style="flex:1; font-size:9px; background:#334155;">P3</button>
+        </div>
+        <div id="graveyard-list" class="tray-list"></div>
+      </div>
+    </div>
+
+    <div id="life-reveal-modal">
+      <div id="modal-card" onclick="placeLifeCardToField()">
+        <div id="modal-card-source">ライフデッキ</div>
+        <div id="modal-card-title">カード名</div>
+      </div>
+    </div>
+
+    <div id="cursor-hover-preview">
+      <div id="preview-owner">プレビュー</div>
+      <div id="preview-name">—</div>
+    </div>
+  </div>
+
+  <div id="pass-notice">全員決定！パックを回転します ➔</div>
+
+  <div id="hover-preview-card">
+    <div class="preview-header">
+      <span class="preview-type" id="pv-type">種類</span>
+      <span class="preview-id" id="pv-id">ID</span>
+    </div>
+    <div class="preview-title" id="pv-name">カード名</div>
+    <div class="preview-image-box">［ CARD ARTWORK ］</div>
+    <div class="preview-desc" id="pv-desc">効果テキスト</div>
   </div>
 
   <script>
-    // --- ゲームデータモデル ---
-    const state = {
-      currentPlayerIndex: 0,
-      players: [
-        { id: 1, name: "プレイヤー 1", draftedCards: [] },
-        { id: 2, name: "プレイヤー 2", draftedCards: [] },
-        { id: 3, name: "プレイヤー 3", draftedCards: [] },
-        { id: 4, name: "プレイヤー 4", draftedCards: [] }
-      ],
-      pool: [
-        { id: 101, name: "剣" },
-        { id: 102, name: "盾" },
-        { id: 103, name: "魔法の杖" },
-        { id: 104, name: "ポーション" },
-        { id: 105, name: "指輪" },
-        { id: 106, name: "鎧" },
-        { id: 107, name: "弓" },
-        { id: 108, name: "靴" }
-      ]
-    };
+    /* =======================================
+       ネットワーク通信ライブラリ (PeerJS)
+       ======================================= */
+    let peer = new Peer();
+    let myId = '';
+    let isHost = false;
+    let myPlayerIndex = 0; // 0: P1(ホスト), 1: P2, 2: P3
+    let connections = [];  // ホスト用コネクションリスト
+    let hostConn = null;   // ゲスト用ホストコネクション
 
-    // --- 描画関数群 ---
-
-    // 1. 全体UIの更新
-    function render() {
-      renderTurnIndicator();
-      renderPool();
-      renderDraftedList();
-    }
-
-    // 2. ターンインジケーター描画
-    function renderTurnIndicator() {
-      const activePlayer = state.players[state.currentPlayerIndex];
-      const indicatorEl = document.getElementById("player-indicator");
-      indicatorEl.textContent = `現在の手番: ${activePlayer.name}`;
-    }
-
-    // 3. カードプール描画
-    function renderPool() {
-      const poolEl = document.getElementById("card-pool");
-      poolEl.innerHTML = "";
-
-      if (state.pool.length === 0) {
-        poolEl.innerHTML = "<p>プールにカードがありません (ドラフト終了)</p>";
-        return;
-      }
-
-      state.pool.forEach(card => {
-        const cardDiv = document.createElement("div");
-        cardDiv.className = "card";
-        cardDiv.textContent = card.name;
-        cardDiv.onclick = () => pickCard(card.id);
-        poolEl.appendChild(cardDiv);
-      });
-    }
-
-    /**
-     * 4. 右側の獲得カード一覧描画（バグ修正箇所）
-     * 
-     * 【修正前（問題のコード）】
-     * const activePlayer = state.players[0]; // P1に固定化されていた
-     * 
-     * 【修正後】
-     * 現在の手番である currentPlayerIndex を動的に参照する。
-     */
-    function renderDraftedList() {
-      // 現在操作中（ターン中）のプレイヤーを動的に取得
-      const activePlayer = state.players[state.currentPlayerIndex];
-      
-      const sidebarTitleEl = document.getElementById("sidebar-title");
-      const draftedListEl = document.getElementById("drafted-list");
-
-      // サイドバーのタイトルを「○○ の獲得カード」と明示
-      sidebarTitleEl.textContent = `${activePlayer.name} の獲得カード`;
-      draftedListEl.innerHTML = "";
-
-      if (activePlayer.draftedCards.length === 0) {
-        draftedListEl.innerHTML = '<span class="empty-msg">まだ獲得したカードはありません</span>';
-        return;
-      }
-
-      activePlayer.draftedCards.forEach(card => {
-        const item = document.createElement("div");
-        item.className = "card-mini";
-        item.textContent = card.name;
-        draftedListEl.appendChild(item);
-      });
-    }
-
-    // --- ロジック関数 ---
-
-    // カードをピックした際の処理
-    function pickCard(cardId) {
-      const cardIndex = state.pool.findIndex(c => c.id === cardId);
-      if (cardIndex === -1) return;
-
-      // 1. プールからカードを取り出す
-      const [pickedCard] = state.pool.splice(cardIndex, 1);
-
-      // 2. 現在の手番プレイヤーの配列に追加
-      const activePlayer = state.players[state.currentPlayerIndex];
-      activePlayer.draftedCards.push(pickedCard);
-
-      // 3. 手番を次のプレイヤーへ（ローテーション）
-      state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
-
-      // 4. 画面を再描画（これで右側の表示も新プレイヤーのものに更新される）
-      render();
-    }
-
-    // 初期化実行
-    window.addEventListener("DOMContentLoaded", () => {
-      render();
+    peer.on('open', (id) => {
+      myId = id;
+      document.getElementById('my-peer-id').innerText = id;
     });
+
+    function copyMyId() {
+      if (!myId || myId === '発行中...') return;
+      navigator.clipboard.writeText(myId).then(() => {
+        const btn = document.getElementById('btn-copy-id');
+        btn.innerText = 'コピーしました！';
+        btn.style.background = '#10b981';
+        btn.style.color = '#fff';
+        setTimeout(() => {
+          btn.innerText = 'コピー';
+          btn.style.background = '#38bdf8';
+          btn.style.color = '#0f172a';
+        }, 2000);
+      }).catch(err => {
+        alert('コピーに失敗しました: ' + err);
+      });
+    }
+
+    function createRoom() {
+      isHost = true;
+      myPlayerIndex = 0;
+      document.getElementById('btn-create-room').disabled = true;
+      document.getElementById('lobby-status').innerText = '他の2人の接続を待っています... (1/3)';
+    }
+
+    function joinRoom() {
+      const hostId = document.getElementById('host-id-input').value.trim();
+      if (!hostId) return alert('ホストIDを入力してください');
+      isHost = false;
+      hostConn = peer.connect(hostId);
+      
+      hostConn.on('open', () => {
+        document.getElementById('lobby-status').innerText = 'ホストへ接続しました。ゲーム開始を待っています...';
+        setupConnection(hostConn);
+      });
+    }
+
+    peer.on('connection', (conn) => {
+      if (!isHost) return;
+      
+      // コネクションの登録管理を修正
+      connections.push(conn);
+      const assignedIndex = connections.length; // 1(P2) or 2(P3)
+      setupConnection(conn, assignedIndex);
+
+      conn.on('open', () => {
+        conn.send({ type: 'INIT_PLAYER', payload: { index: assignedIndex } });
+        document.getElementById('lobby-status').innerText = `プレイヤーが参加しました (${connections.length + 1}/3)`;
+
+        if (connections.length === 2) {
+          setTimeout(initHostPacksAndStart, 1000);
+        }
+      });
+    });
+
+    function setupConnection(conn, assignedIndex) {
+      conn.on('data', (data) => {
+        handleNetworkMessage(data, conn);
+      });
+      conn.on('close', () => {
+        console.log("切断されました");
+      });
+    }
+
+    function broadcast(data) {
+      if (isHost) {
+        handleNetworkMessage(data); // ホスト自身の反映
+        connections.forEach(c => {
+          if (c && c.open) c.send(data);
+        });
+      } else {
+        if (hostConn && hostConn.open) hostConn.send(data);
+      }
+    }
+
+    function handleNetworkMessage(data, senderConn) {
+      switch (data.type) {
+        case 'INIT_PLAYER':
+          myPlayerIndex = data.payload.index;
+          document.getElementById('my-role-num').innerText = myPlayerIndex + 1;
+          break;
+
+        case 'START_DRAFT':
+          currentHands = data.payload.hands;
+          document.getElementById('lobby-view').style.display = 'none';
+          updateUI();
+          break;
+
+        case 'SUBMIT_PICK':
+          if (isHost) {
+            const playerIdx = data.payload.from;
+            selectedIndices[playerIdx] = data.payload.pickedIdx;
+            isReady[playerIdx] = true;
+            
+            broadcast({ type: 'UPDATE_READY_STATUS', payload: { isReady: isReady } });
+
+            if (isReady[0] && isReady[1] && isReady[2]) {
+              setTimeout(processPassCards, 500);
+            }
+          }
+          break;
+
+        case 'UPDATE_READY_STATUS':
+          isReady = data.payload.isReady;
+          updateStatusTags();
+          break;
+
+        case 'NEXT_DRAFT_STEP':
+          currentHands = data.payload.hands;
+          currentRound = data.payload.round;
+          currentPickStep = data.payload.pickStep;
+          unusedPackIndex = data.payload.unusedPackIndex;
+          selectedIndices = [null, null, null];
+          isReady = [false, false, false];
+
+          const notice = document.getElementById('pass-notice');
+          notice.style.display = 'block';
+          setTimeout(() => {
+            notice.style.display = 'none';
+            updateUI();
+          }, 600);
+          break;
+
+        case 'TRANSITION_DECK_BUILD':
+          transitionToDeckBuilder();
+          break;
+
+        case 'PLAYER_DECK_READY':
+          if (isHost) {
+            deckReadyPlayers[data.payload.from] = true;
+            if (deckReadyPlayers[0] && deckReadyPlayers[1] && deckReadyPlayers[2]) {
+              broadcast({ type: 'START_BATTLE_ALL' });
+            }
+          }
+          break;
+
+        case 'START_BATTLE_ALL':
+          startGame();
+          break;
+
+        // 盤面リアルタイム同期
+        case 'SYNC_BOARD_CARD':
+          syncBoardCardLocal(data.payload);
+          break;
+        case 'MOVE_BOARD_CARD':
+          moveBoardCardLocal(data.payload);
+          break;
+        case 'REMOVE_BOARD_CARD':
+          removeBoardCardLocal(data.payload.id);
+          break;
+        case 'SYNC_SCORE':
+          trinityScores = data.payload.trinity;
+          lifeCardScores = data.payload.lifeScores;
+          updateScoreDisplay();
+          break;
+        case 'SYNC_BAR':
+          const bar = document.getElementById(data.payload.barId);
+          if (bar) bar.style.left = `${data.payload.left}px`;
+          break;
+      }
+    }
+
+    /* =======================================
+       全351枚のカードプール＆ドラフト構築
+       ======================================= */
+    const CARD_TYPES = ['攻撃呪文', '防御呪文', '召喚獣', '古代遺物', 'カウンター', '領域展開'];
+    let masterDeck = [];
+    for (let i = 1; i <= 351; i++) {
+      const type = CARD_TYPES[i % CARD_TYPES.length];
+      masterDeck.push({
+        id: `c_${i}`,
+        name: `カード#${i}`,
+        type: type,
+        desc: `【${type}】効果テキスト: 盤面の4マスや境界線に強力な影響を与える効果を発動します。(ID: ${i})`
+      });
+    }
+
+    const SPECIAL_CARDS = [
+      { id: 'sp_1', name: '覇王の印章', type: '独立カード', desc: '【パッシブ】盤面の中央バーの初期位置を1マス自分有利へシフトする。' },
+      { id: 'sp_2', name: '時空の歪み', type: '独立カード', desc: '【起動】相手が横置きにしたカード1枚を裏向きにする。' },
+      { id: 'sp_3', name: '聖なる盾', type: '独立カード', desc: '【自動】不利なマスへ押し込まれた際のダメージを1回無効化。' },
+      { id: 'sp_4', name: '錬金術の器', type: '独立カード', desc: '【常時】手札を1枚破棄して山札から1枚引くことができる。' }
+    ];
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    let allPacks = [];
+    let currentRound = 1;
+    let currentPickStep = 1;
+    let unusedPackIndex = 0;
+    let currentHands = [[], [], []];
+    let selectedIndices = [null, null, null];
+    let isReady = [false, false, false];
+    let myPickedCards = []; // 各プレイヤー自身の獲得カード保持変数（固定から自プレイヤー連動に修正）
+    let deckReadyPlayers = [false, false, false];
+
+    let poolCards = [];
+    let mainDeck = [];
+    let selectedSpecialCard = null;
+
+    function initHostPacksAndStart() {
+      shuffle(masterDeck);
+      allPacks = [];
+      for (let i = 0; i < 9; i++) {
+        allPacks.push(masterDeck.slice(i * 13, (i + 1) * 13));
+      }
+      unusedPackIndex = 0;
+      currentRound = 1;
+      currentPickStep = 1;
+
+      currentHands = [
+        [...allPacks[unusedPackIndex++]],
+        [...allPacks[unusedPackIndex++]],
+        [...allPacks[unusedPackIndex++]]
+      ];
+
+      broadcast({
+        type: 'START_DRAFT',
+        payload: { hands: currentHands }
+      });
+    }
+
+    function updateUI() {
+      document.getElementById('round-num').innerText = currentRound;
+      document.getElementById('pick-num').innerText = currentPickStep;
+      document.getElementById('remaining-packs').innerText = 9 - unusedPackIndex;
+      
+      const myHand = currentHands[myPlayerIndex] || [];
+      document.getElementById('pack-count-label').innerText = `残 ${myHand.length} 枚`;
+      document.getElementById('picked-count').innerText = myPickedCards.length;
+
+      const container = document.getElementById('pack-cards');
+      container.innerHTML = '';
+      myHand.forEach((card, idx) => {
+        const cardEl = createCardElement(card, () => selectCard(idx));
+        if (selectedIndices[myPlayerIndex] === idx) cardEl.classList.add('selected');
+        container.appendChild(cardEl);
+      });
+
+      const pickedContainer = document.getElementById('picked-cards');
+      pickedContainer.innerHTML = '';
+      myPickedCards.forEach(card => {
+        const el = createCardElement(card);
+        pickedContainer.appendChild(el);
+      });
+
+      const btn = document.getElementById('confirm-btn');
+      if (isReady[myPlayerIndex]) {
+        btn.disabled = true;
+        btn.innerText = '他プレイヤーの決定を待っています...';
+      } else if (selectedIndices[myPlayerIndex] !== null) {
+        btn.disabled = false;
+        btn.innerText = 'このカードで決定';
+      } else {
+        btn.disabled = true;
+        btn.innerText = 'カードを選択してください';
+      }
+
+      updateStatusTags();
+    }
+
+    function createCardElement(card, onClick) {
+      const cardEl = document.createElement('div');
+      cardEl.className = 'card-item';
+      cardEl.draggable = true;
+      cardEl.innerHTML = `<div class="card-type">${card.type}</div><div class="card-name">${card.name}</div>`;
+      if (onClick) cardEl.onclick = onClick;
+
+      cardEl.ondragstart = (e) => {
+        e.dataTransfer.setData('text/plain', JSON.stringify(card));
+      };
+
+      cardEl.onmouseenter = (e) => showPreview(card, e);
+      cardEl.onmousemove = (e) => movePreview(e);
+      cardEl.onmouseleave = () => hidePreview();
+
+      return cardEl;
+    }
+
+    const previewEl = document.getElementById('hover-preview-card');
+
+    function showPreview(card, event) {
+      document.getElementById('pv-type').innerText = card.type || '独立カード';
+      document.getElementById('pv-id').innerText = card.id;
+      document.getElementById('pv-name').innerText = card.name;
+      document.getElementById('pv-desc').innerText = card.desc;
+      previewEl.style.display = 'flex';
+      movePreview(event);
+    }
+
+    function movePreview(event) {
+      let left = event.clientX + 20;
+      let top = event.clientY + 20;
+      if (left + 380 > window.innerWidth) left = event.clientX - 400;
+      if (top + 520 > window.innerHeight) top = window.innerHeight - 530;
+      if (top < 10) top = 10;
+      previewEl.style.left = `${left}px`;
+      previewEl.style.top = `${top}px`;
+    }
+
+    function hidePreview() { previewEl.style.display = 'none'; }
+
+    function selectCard(index) {
+      if (isReady[myPlayerIndex]) return;
+      selectedIndices[myPlayerIndex] = index;
+      updateUI();
+    }
+
+    function updateStatusTags() {
+      for (let i = 0; i < 3; i++) {
+        const tag = document.getElementById(`p${i + 1}-status`);
+        tag.className = 'ready-tag ' + (isReady[i] ? 'tag-ready' : 'tag-waiting');
+        tag.innerText = isReady[i] ? '決定完了' : '選択中...';
+      }
+    }
+
+    function confirmPick() {
+      if (selectedIndices[myPlayerIndex] === null || isReady[myPlayerIndex]) return;
+      hidePreview();
+
+      broadcast({
+        type: 'SUBMIT_PICK',
+        payload: { from: myPlayerIndex, pickedIdx: selectedIndices[myPlayerIndex] }
+      });
+    }
+
+    function processPassCards() {
+      // プレイヤーそれぞれが選んだカードを獲得一覧に追加（操作プレイヤー自身のリストに追加）
+      for (let i = 0; i < 3; i++) {
+        const picked = currentHands[i][selectedIndices[i]];
+        if (i === myPlayerIndex) {
+          myPickedCards.push(picked);
+        }
+        currentHands[i].splice(selectedIndices[i], 1);
+      }
+
+      // パックを右へ移動 (0->1, 1->2, 2->0)
+      const nextHands = [currentHands[2], currentHands[0], currentHands[1]];
+      currentHands = nextHands;
+
+      if (currentHands[0].length === 0) {
+        if (currentRound < 3) {
+          currentRound++;
+          currentPickStep = 1;
+          currentHands = [
+            [...allPacks[unusedPackIndex++]],
+            [...allPacks[unusedPackIndex++]],
+            [...allPacks[unusedPackIndex++]]
+          ];
+          broadcastNextStep();
+        } else {
+          broadcast({ type: 'TRANSITION_DECK_BUILD' });
+        }
+      } else {
+        currentPickStep++;
+        broadcastNextStep();
+      }
+    }
+
+    function broadcastNextStep() {
+      broadcast({
+        type: 'NEXT_DRAFT_STEP',
+        payload: {
+          hands: currentHands,
+          round: currentRound,
+          pickStep: currentPickStep,
+          unusedPackIndex: unusedPackIndex
+        }
+      });
+    }
+
+    function transitionToDeckBuilder() {
+      document.getElementById('draft-view').style.display = 'none';
+      document.getElementById('deck-builder-view').style.display = 'flex';
+      document.getElementById('draft-status-info').style.display = 'none';
+      document.getElementById('deck-status-info').style.display = 'flex';
+      document.getElementById('phase-title').innerText = '🛠️ デッキ構築フェーズ';
+
+      poolCards = [...myPickedCards];
+      renderSpecialCards();
+      renderDeckBuilder();
+    }
+
+    function renderSpecialCards() {
+      const container = document.getElementById('special-card-list');
+      container.innerHTML = '';
+      SPECIAL_CARDS.forEach(card => {
+        const el = document.createElement('div');
+        el.className = 'special-card-item' + (selectedSpecialCard?.id === card.id ? ' active' : '');
+        el.innerHTML = `<div style="font-size:10px; color:#c084fc;">独立カード</div><div style="font-size:12px; font-weight:bold; color:#fff; margin-top:2px;">${card.name}</div>`;
+        el.onclick = () => {
+          selectedSpecialCard = card;
+          renderSpecialCards();
+          checkDeckCompletion();
+        };
+        el.onmouseenter = (e) => showPreview(card, e);
+        el.onmousemove = (e) => movePreview(e);
+        el.onmouseleave = () => hidePreview();
+        container.appendChild(el);
+      });
+    }
+
+    function renderDeckBuilder() {
+      const poolContainer = document.getElementById('pool-cards');
+      poolContainer.innerHTML = '';
+      document.getElementById('pool-count').innerText = `${poolCards.length}枚`;
+      poolCards.forEach(card => {
+        const el = createCardElement(card, () => moveToDeck(card, 'main'));
+        poolContainer.appendChild(el);
+      });
+
+      const mainContainer = document.getElementById('main-deck-cards');
+      mainContainer.innerHTML = '';
+      document.getElementById('main-count').innerText = mainDeck.length;
+      document.getElementById('main-deck-num').innerText = mainDeck.length;
+      document.getElementById('life-count').innerText = poolCards.length;
+      mainDeck.forEach(card => {
+        const el = createCardElement(card, () => removeFromDeck(card, 'main'));
+        mainContainer.appendChild(el);
+      });
+
+      checkDeckCompletion();
+    }
+
+    function allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+    function leaveDrop(e) { e.currentTarget.classList.remove('drag-over'); }
+    function handleDrop(e, targetDeckType) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+      const cardData = e.dataTransfer.getData('text/plain');
+      if (!cardData) return;
+      moveToDeck(JSON.parse(cardData), targetDeckType);
+    }
+
+    function moveToDeck(card, targetDeckType) {
+      const poolIdx = poolCards.findIndex(c => c.id === card.id);
+      const mainIdx = mainDeck.findIndex(c => c.id === card.id);
+      if (targetDeckType === 'main') {
+        if (mainDeck.length >= 23) return alert('メインデッキは最大23枚です');
+        if (poolIdx !== -1) poolCards.splice(poolIdx, 1);
+        if (mainIdx === -1) mainDeck.push(card);
+      }
+      hidePreview();
+      renderDeckBuilder();
+    }
+
+    function removeFromDeck(card, fromDeckType) {
+      if (fromDeckType === 'main') {
+        const idx = mainDeck.findIndex(c => c.id === card.id);
+        if (idx !== -1) mainDeck.splice(idx, 1);
+      }
+      poolCards.push(card);
+      hidePreview();
+      renderDeckBuilder();
+    }
+
+    function checkDeckCompletion() {
+      const btn = document.getElementById('start-game-btn');
+      const isMainFull = mainDeck.length === 23;
+      const isSpecialSelected = selectedSpecialCard !== null;
+      if (isMainFull && isSpecialSelected) {
+        btn.disabled = false;
+        btn.innerText = '⚔️ 対戦準備完了';
+      } else {
+        btn.disabled = true;
+        btn.innerText = `構築中 (メイン:${mainDeck.length}/23)`;
+      }
+    }
+
+    function confirmDeckReady() {
+      document.getElementById('start-game-btn').disabled = true;
+      document.getElementById('start-game-btn').innerText = '他のプレイヤーの準備を待っています...';
+      broadcast({
+        type: 'PLAYER_DECK_READY',
+        payload: { from: myPlayerIndex }
+      });
+    }
+
+    /* =======================================
+       対戦ゲームモード (オンライン同期)
+       ======================================= */
+    let deckCards = [];
+    let lifeDecks = { left: [], right: [] };
+    let trinityScores = { p1: 0, p2: 0, p3: 0 };
+    let lifeCardScores = { p1: 0, p2: 0, p3: 0 };
+    let currentRevealedLifeCard = null;
+
+    let graveyards = { p0: [], p1: [], p2: [] };
+    let currentGyTab = 'p0';
+    let highestZIndex = 100;
+    let manaList = [];
+    const COLOR_ORDER = { 'red': 1, 'yellow': 2, 'blue': 3, 'purple': 4 };
+
+    function startGame() {
+      hidePreview();
+      document.getElementById('header-bar').style.display = 'none';
+      document.getElementById('deck-builder-view').style.display = 'none';
+      document.getElementById('battle-view').style.display = 'flex';
+
+      deckCards = mainDeck.map(c => c.name);
+      shuffle(deckCards);
+
+      const lifeNames = poolCards.map(c => c.name);
+      shuffle(lifeNames);
+      lifeDecks.left = lifeNames.slice(0, 8);
+      lifeDecks.right = lifeNames.slice(8, 16);
+
+      document.getElementById('active-sp-card-name').innerText = selectedSpecialCard.name;
+      document.getElementById('left-life-count').innerText = lifeDecks.left.length;
+      document.getElementById('right-life-count').innerText = lifeDecks.right.length;
+
+      updateDeckUI();
+      updateScoreDisplay();
+      renderGraveyardList();
+
+      addCardToHand(selectedSpecialCard.name);
+      for (let i = 0; i < 4; i++) drawCard();
+
+      setupSnapBars();
+    }
+
+    function updateScoreDisplay() {
+      document.getElementById('p1-trinity-val').innerText = trinityScores.p1;
+      document.getElementById('p2-trinity-val').innerText = trinityScores.p2;
+      document.getElementById('p3-trinity-val').innerText = trinityScores.p3;
+
+      document.getElementById('p1-card-score').innerText = lifeCardScores.p1;
+      document.getElementById('p2-card-score').innerText = lifeCardScores.p2;
+      document.getElementById('p3-card-score').innerText = lifeCardScores.p3;
+
+      document.getElementById('counter-num').innerText = trinityScores.p1;
+    }
+
+    function updateTrinity(delta) {
+      trinityScores.p1 = Math.max(0, trinityScores.p1 + delta);
+      broadcast({
+        type: 'SYNC_SCORE',
+        payload: { trinity: trinityScores, lifeScores: lifeCardScores }
+      });
+      updateScoreDisplay();
+    }
+
+    const previewBox = document.getElementById('cursor-hover-preview');
+    const previewOwner = document.getElementById('preview-owner');
+    const previewName = document.getElementById('preview-name');
+
+    function attachHoverPreview(element, cardName, ownerLabel = 'カード') {
+      element.addEventListener('mouseenter', () => {
+        const isFaceDown = element.getAttribute('data-is-facedown') === 'true';
+        previewOwner.innerText = isFaceDown ? '裏面カード' : (element.getAttribute('data-owner') || ownerLabel);
+        previewName.innerText = isFaceDown ? '???' : cardName;
+        previewBox.style.display = 'flex';
+      });
+
+      element.addEventListener('mousemove', (e) => {
+        let x = e.clientX + 20, y = e.clientY + 20;
+        if (x + 230 > window.innerWidth) x = e.clientX - 240;
+        if (y + 310 > window.innerHeight) y = e.clientY - 310;
+        previewBox.style.left = `${x}px`; previewBox.style.top = `${y}px`;
+      });
+
+      element.addEventListener('mouseleave', () => { previewBox.style.display = 'none'; });
+    }
+
+    function revealLifeCard(side) {
+      if (lifeDecks[side].length === 0) return alert("ライフデッキが空です！");
+      const cardName = lifeDecks[side].shift();
+      currentRevealedLifeCard = { side: side, name: cardName };
+      document.getElementById(`${side}-life-count`).innerText = lifeDecks[side].length;
+
+      document.getElementById('modal-card-source').innerText = (side === 'left') ? '◀ 左ライフデッキ' : '右ライフデッキ ▶';
+      document.getElementById('modal-card-title').innerText = cardName;
+      document.getElementById('life-reveal-modal').style.display = 'flex';
+    }
+
+    function placeLifeCardToField() {
+      document.getElementById('life-reveal-modal').style.display = 'none';
+      if (!currentRevealedLifeCard) return;
+
+      const cardName = currentRevealedLifeCard.name;
+      const cardId = `card_sync_${myPlayerIndex}_${Date.now()}`;
+      
+      broadcast({
+        type: 'SYNC_BOARD_CARD',
+        payload: { id: cardId, cardName: cardName, ownerIndex: myPlayerIndex, x: 180, y: 100, isFaceDown: false }
+      });
+
+      currentRevealedLifeCard = null;
+    }
+
+    function updateDeckUI() {
+      document.getElementById('deck-count').innerText = deckCards.length;
+      document.getElementById('refresh-btn').style.display = (deckCards.length === 0) ? 'block' : 'none';
+      if (document.getElementById('deck-search-panel').style.display === 'flex') {
+        renderDeckSearchList();
+      }
+    }
+
+    function refreshDeck() {
+      if (graveyards[`p${myPlayerIndex}`].length === 0) return alert("墓地にカードがありません！");
+      deckCards = deckCards.concat(graveyards[`p${myPlayerIndex}`]);
+      shuffle(deckCards);
+      graveyards[`p${myPlayerIndex}`] = [];
+      renderGraveyardList();
+      updateDeckUI();
+    }
+
+    function toggleDeckSearch() {
+      const panel = document.getElementById('deck-search-panel');
+      panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
+      if (panel.style.display === 'flex') renderDeckSearchList();
+    }
+
+    function renderDeckSearchList() {
+      const listContainer = document.getElementById('deck-search-list');
+      listContainer.innerHTML = '';
+      let searchArr = [...deckCards];
+      shuffle(searchArr);
+
+      searchArr.forEach((cardName) => {
+        const card = document.createElement('div');
+        card.className = 'dummy-card';
+        card.innerHTML = `<span>山札</span><b>${cardName}</b>`;
+        attachHoverPreview(card, cardName, '山札内カード');
+
+        enableTrayCardDrag(card, cardName, () => {
+          const idx = deckCards.indexOf(cardName);
+          if (idx !== -1) deckCards.splice(idx, 1);
+          updateDeckUI();
+        });
+        listContainer.appendChild(card);
+      });
+    }
+
+    function switchGyTab(playerKey) {
+      currentGyTab = playerKey;
+      ['p0', 'p1', 'p2'].forEach(k => {
+        document.getElementById(`gy-tab-${k}`).style.background = (k === playerKey) ? '#4f46e5' : '#334155';
+      });
+      renderGraveyardList();
+    }
+
+    function renderGraveyardList() {
+      const listContainer = document.getElementById('graveyard-list');
+      listContainer.innerHTML = '';
+      document.getElementById('gy-count').innerText = graveyards[`p${myPlayerIndex}`].length;
+
+      graveyards[currentGyTab].forEach((cardName, index) => {
+        const card = document.createElement('div');
+        card.className = 'dummy-card';
+        card.innerHTML = `<span>墓地</span><b>${cardName}</b>`;
+        attachHoverPreview(card, cardName, `P${currentGyTab}の墓地`);
+
+        if (currentGyTab === `p${myPlayerIndex}`) {
+          enableTrayCardDrag(card, cardName, () => {
+            graveyards[`p${myPlayerIndex}`].splice(index, 1);
+            renderGraveyardList();
+          });
+        }
+        listContainer.appendChild(card);
+      });
+    }
+
+    function enableTrayCardDrag(cardElement, cardName, removeFromSourceCallback) {
+      cardElement.onmousedown = (e) => {
+        previewBox.style.display = 'none';
+        const table = document.getElementById('zone-table');
+        const tableRect = table.getBoundingClientRect();
+
+        const ghost = cardElement.cloneNode(true);
+        ghost.style.position = 'fixed'; ghost.style.zIndex = '999999'; ghost.style.pointerEvents = 'none'; ghost.style.opacity = '0.85';
+        document.body.appendChild(ghost);
+
+        const moveAt = (pageX, pageY) => {
+          ghost.style.left = pageX - 30 + 'px'; ghost.style.top = pageY - 42 + 'px';
+        };
+        moveAt(e.pageX, e.pageY);
+
+        const onMouseMove = (ev) => moveAt(ev.pageX, ev.pageY);
+        const onMouseUp = (ev) => {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+          ghost.remove();
+
+          if (ev.clientX >= tableRect.left && ev.clientX <= tableRect.right && ev.clientY >= tableRect.top && ev.clientY <= tableRect.bottom) {
+            removeFromSourceCallback();
+            const cardId = `card_sync_${myPlayerIndex}_${Date.now()}`;
+            broadcast({
+              type: 'SYNC_BOARD_CARD',
+              payload: { id: cardId, cardName: cardName, ownerIndex: myPlayerIndex, x: ev.clientX - tableRect.left - 30, y: ev.clientY - tableRect.top - 42, isFaceDown: false }
+            });
+          }
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      };
+    }
+
+    function rearrangeManaZone() {
+      manaList.sort((a, b) => COLOR_ORDER[a.color] - COLOR_ORDER[b.color]);
+      const manaZone = document.getElementById('mana-zone');
+      const maxCols = Math.max(1, Math.floor((manaZone.clientWidth - 20) / 46));
+
+      manaList.forEach((manaObj, index) => {
+        const col = index % maxCols;
+        const row = Math.floor(index / maxCols);
+        manaObj.element.style.left = `${10 + col * 46}px`;
+        manaObj.element.style.top = `${25 + row * 38}px`;
+      });
+    }
+
+    function spawnMana(color) {
+      const manaZone = document.getElementById('mana-zone');
+      const mana = document.createElement('div');
+      mana.className = `mana-card mana-${color}`;
+      mana.innerText = 'マナ';
+
+      attachHoverPreview(mana, `${color.toUpperCase()} マナ`, 'マナゾーン');
+
+      const manaObj = { id: `mana_${Date.now()}`, color: color, element: mana, isTapped: false };
+      manaList.push(manaObj);
+      manaZone.appendChild(mana);
+
+      mana.onclick = () => {
+        manaObj.isTapped = !manaObj.isTapped;
+        mana.classList.toggle('tapped', manaObj.isTapped);
+      };
+
+      rearrangeManaZone();
+    }
+
+    function addCardToHand(cardName) {
+      const handContainer = document.getElementById('hand-cards');
+      const wrapper = document.createElement('div');
+      wrapper.className = 'hand-card-wrapper';
+
+      const card = document.createElement('div');
+      card.className = 'dummy-card hand-card';
+      card.innerHTML = `<span>手札</span><b>${cardName}</b>`;
+      attachHoverPreview(card, cardName, '自分の手札');
+
+      const faceDownBtn = document.createElement('button');
+      faceDownBtn.className = 'game-btn';
+      faceDownBtn.innerText = '裏で出す';
+      faceDownBtn.style.fontSize = '8px';
+      faceDownBtn.style.padding = '1px 4px';
+      faceDownBtn.style.background = '#334155';
+
+      const setupHandDrag = (triggerEl, isFaceDown) => {
+        triggerEl.onmousedown = (e) => {
+          previewBox.style.display = 'none';
+          const table = document.getElementById('zone-table');
+          const tableRect = table.getBoundingClientRect();
+          
+          const ghost = card.cloneNode(true);
+          if (isFaceDown) { ghost.classList.add('card-face-down'); ghost.innerHTML = `<span>裏面</span><b>???</b>`; }
+          ghost.style.position = 'fixed'; ghost.style.zIndex = '999999'; ghost.style.pointerEvents = 'none'; ghost.style.opacity = '0.85';
+          document.body.appendChild(ghost);
+
+          const moveAt = (pageX, pageY) => { ghost.style.left = pageX - 30 + 'px'; ghost.style.top = pageY - 42 + 'px'; };
+          moveAt(e.pageX, e.pageY);
+
+          const onMouseMove = (ev) => moveAt(ev.pageX, ev.pageY);
+          const onMouseUp = (ev) => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            ghost.remove();
+
+            if (ev.clientX >= tableRect.left && ev.clientX <= tableRect.right && ev.clientY >= tableRect.top && ev.clientY <= tableRect.bottom) {
+              wrapper.remove();
+              const cardId = `card_sync_${myPlayerIndex}_${Date.now()}`;
+              broadcast({
+                type: 'SYNC_BOARD_CARD',
+                payload: {
+                  id: cardId, cardName: cardName, ownerIndex: myPlayerIndex,
+                  x: ev.clientX - tableRect.left - 30, y: ev.clientY - tableRect.top - 42,
+                  isFaceDown: isFaceDown
+                }
+              });
+            }
+          };
+
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        };
+      };
+
+      setupHandDrag(card, false);
+      setupHandDrag(faceDownBtn, true);
+
+      wrapper.appendChild(card);
+      wrapper.appendChild(faceDownBtn);
+      handContainer.appendChild(wrapper);
+    }
+
+    function drawCard() {
+      if (deckCards.length === 0) return alert("山札がありません！");
+      const drawnCard = deckCards.shift();
+      updateDeckUI();
+      addCardToHand(drawnCard);
+    }
+
+    function syncBoardCardLocal(data) {
+      let card = document.getElementById(data.id);
+      const table = document.getElementById('zone-table');
+
+      if (!card) {
+        card = document.createElement('div');
+        card.id = data.id;
+        card.className = `dummy-card placed-card orient-p${data.ownerIndex}`;
+        table.appendChild(card);
+      }
+
+      card.setAttribute('data-owner', `P${data.ownerIndex + 1}`);
+      card.setAttribute('data-card-name', data.cardName);
+
+      if (data.isFaceDown) {
+        card.classList.add('card-face-down');
+        card.innerHTML = `<span>裏面</span><b>???</b>`;
+        card.setAttribute('data-is-facedown', 'true');
+      } else {
+        card.classList.remove('card-face-down');
+        card.innerHTML = `<span>P${data.ownerIndex + 1}</span><b>${data.cardName}</b>`;
+        card.setAttribute('data-is-facedown', 'false');
+      }
+
+      card.style.left = `${data.x}px`;
+      card.style.top = `${data.y}px`;
+
+      attachHoverPreview(card, data.cardName, `P${data.ownerIndex + 1}`);
+      enableCardDrag(card, table, data.cardName, data.id);
+    }
+
+    function moveBoardCardLocal(data) {
+      const card = document.getElementById(data.id);
+      if (card) {
+        card.style.left = `${data.x}px`;
+        card.style.top = `${data.y}px`;
+        if (data.isTapped !== undefined) {
+          card.classList.toggle('card-tapped', data.isTapped);
+        }
+      }
+    }
+
+    function removeBoardCardLocal(id) {
+      const card = document.getElementById(id);
+      if (card) card.remove();
+    }
+
+    function enableCardDrag(card, container, cardName, cardSyncId) {
+      let isMoved = false;
+      let clickTimer = null, clickCount = 0;
+
+      card.onmousedown = (e) => {
+        previewBox.style.display = 'none';
+        isMoved = false;
+
+        let startX = e.clientX, startY = e.clientY;
+        let cardRect = card.getBoundingClientRect();
+        let offsetX = e.clientX - cardRect.left, offsetY = e.clientY - cardRect.top;
+
+        const onMouseMove = (ev) => {
+          if (!isMoved && (Math.abs(ev.clientX - startX) > 3 || Math.abs(ev.clientY - startY) > 3)) {
+            isMoved = true;
+          }
+          if (isMoved) {
+            const tableRect = container.getBoundingClientRect();
+            const x = ev.clientX - tableRect.left - offsetX;
+            const y = ev.clientY - tableRect.top - offsetY;
+            card.style.left = `${x}px`;
+            card.style.top = `${y}px`;
+
+            broadcast({
+              type: 'MOVE_BOARD_CARD',
+              payload: { id: cardSyncId, x: x, y: y }
+            });
+          }
+        };
+
+        const onMouseUp = (ev) => {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+
+          if (!isMoved) {
+            clickCount++;
+            if (clickCount === 1) {
+              clickTimer = setTimeout(() => {
+                const isTapped = card.classList.toggle('card-tapped');
+                const tableRect = container.getBoundingClientRect();
+                broadcast({
+                  type: 'MOVE_BOARD_CARD',
+                  payload: { id: cardSyncId, x: parseInt(card.style.left), y: parseInt(card.style.top), isTapped: isTapped }
+                });
+                clickCount = 0;
+              }, 250);
+            } else if (clickCount === 2) {
+              clearTimeout(clickTimer);
+              card.classList.remove('card-face-down');
+              card.innerHTML = `<span>P${myPlayerIndex + 1}</span><b>${cardName}</b>`;
+              card.setAttribute('data-is-facedown', 'false');
+              clickCount = 0;
+            }
+            return;
+          }
+
+          const isOverlapping = (id) => {
+            const el = document.getElementById(id);
+            if (!el) return false;
+            const r = el.getBoundingClientRect();
+            return (ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom);
+          };
+
+          if (isOverlapping('bottom-hand-panel')) {
+            card.remove();
+            broadcast({ type: 'REMOVE_BOARD_CARD', payload: { id: cardSyncId } });
+            addCardToHand(cardName);
+          } else if (isOverlapping('score-add-zone')) {
+            card.remove();
+            broadcast({ type: 'REMOVE_BOARD_CARD', payload: { id: cardSyncId } });
+            lifeCardScores.p1++;
+            updateScoreDisplay();
+          } else if (isOverlapping('deck-return-zone')) {
+            card.remove();
+            broadcast({ type: 'REMOVE_BOARD_CARD', payload: { id: cardSyncId } });
+            deckCards.push(cardName);
+            shuffle(deckCards);
+            updateDeckUI();
+          } else if (isOverlapping('graveyard-zone')) {
+            card.remove();
+            broadcast({ type: 'REMOVE_BOARD_CARD', payload: { id: cardSyncId } });
+            graveyards[`p${myPlayerIndex}`].push(cardName);
+            renderGraveyardList();
+          }
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      };
+    }
+
+    function setupSnapBars() {
+      const container = document.getElementById('zone-table');
+      const bars = [
+        { id: 'bar-top', bar: document.getElementById('bar-top'), grid: document.getElementById('top-grid') },
+        { id: 'bar-left', bar: document.getElementById('bar-left'), grid: document.getElementById('left-grid') },
+        { id: 'bar-right', bar: document.getElementById('bar-right'), grid: document.getElementById('right-grid') }
+      ];
+
+      bars.forEach(({ id, bar, grid }) => {
+        const getSnapPositions = () => {
+          const containerRect = container.getBoundingClientRect();
+          const gridBoxes = grid.querySelectorAll('.grid-box');
+          const positions = [];
+          gridBoxes.forEach(box => {
+            const boxRect = box.getBoundingClientRect();
+            positions.push((boxRect.left + boxRect.width / 2) - containerRect.left - (bar.offsetWidth / 2));
+          });
+          return positions;
+        };
+
+        setTimeout(() => {
+          const pos = getSnapPositions();
+          if (pos.length > 0) {
+            bar.style.left = `${pos[0]}px`;
+            const containerRect = container.getBoundingClientRect();
+            const gridRect = grid.getBoundingClientRect();
+            bar.style.top = `${gridRect.top - containerRect.top - 3}px`;
+          }
+        }, 50);
+
+        bar.onmousedown = (e) => {
+          const containerRect = container.getBoundingClientRect();
+          let offsetX = e.clientX - bar.getBoundingClientRect().left;
+
+          const onMouseMove = (ev) => {
+            let newLeft = ev.clientX - containerRect.left - offsetX;
+            bar.style.left = `${newLeft}px`;
+            broadcast({ type: 'SYNC_BAR', payload: { barId: id, left: newLeft } });
+          };
+
+          const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            const positions = getSnapPositions();
+            let currentLeft = parseFloat(bar.style.left);
+            let closestPos = positions.reduce((prev, curr) => Math.abs(curr - currentLeft) < Math.abs(prev - currentLeft) ? curr : prev);
+            bar.style.left = `${closestPos}px`;
+            broadcast({ type: 'SYNC_BAR', payload: { barId: id, left: closestPos } });
+          };
+
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        };
+      });
+    }
   </script>
 </body>
 </html>
