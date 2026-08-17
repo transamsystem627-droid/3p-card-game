@@ -132,9 +132,9 @@
       padding: 20px 32px; text-align: center; font-size: 18px; font-weight: bold; color: #38bdf8; display: none; z-index: 1000;
     }
 
-    /* 拡大版プレビュー：サイズをさらに大きく変更 (650px x 910px) */
+    /* 拡大版プレビュー：サイズを少し小さく修正 (400px x 560px) */
     #hover-preview-card {
-      position: fixed; width: 650px; height: 910px; background: #020617;
+      position: fixed; width: 400px; height: 560px; background: #020617;
       border: 3px solid #38bdf8; border-radius: 12px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
       display: none; pointer-events: none; z-index: 300000; padding: 6px; overflow: hidden;
     }
@@ -220,7 +220,7 @@
     .lock-slot {
       width: 70px; height: 98px; border: 1px dashed #475569; border-radius: 6px;
       display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; text-align: center;
-      background: rgba(15, 23, 42, 0.3);
+      background: rgba(15, 23, 42, 0.3); transition: border-color 0.15s;
     }
     
     #p1-lock-zone { bottom: 8px; left: 50%; transform: translateX(-50%); }
@@ -747,12 +747,8 @@
       const scoreBar = document.getElementById('score-bar');
       if (!scoreBar) return;
 
-      let order = [1, 0, 2]; // デフォルト: P2, P1, P3
-      if (myPlayerIndex === 1) {
-        order = [2, 1, 0];
-      } else if (myPlayerIndex === 2) {
-        order = [0, 2, 1];
-      }
+      // 各自の視点にあわせて左から P(左隣)、P(自分)、P(右隣) になるように設定
+      let order = [(myPlayerIndex + 1) % 3, myPlayerIndex, (myPlayerIndex + 2) % 3]; // P1視点では P2, P1, P3
 
       let html = '';
       order.forEach((pIdx, idx) => {
@@ -963,7 +959,7 @@
       updateStatusTags();
     }
 
-    /* カード要素作成 (ドラッグドロップ対応拡張) */
+    /* カード要素作成 */
     function createCardElement(card, onClick) {
       const cardEl = document.createElement('div');
       cardEl.className = 'card-item';
@@ -987,8 +983,8 @@
 
     function movePreview(event) {
       let left = event.clientX + 20, top = event.clientY + 20;
-      if (left + 660 > window.innerWidth) left = event.clientX - 670;
-      if (top + 920 > window.innerHeight) top = window.innerHeight - 930;
+      if (left + 420 > window.innerWidth) left = event.clientX - 430;
+      if (top + 570 > window.innerHeight) top = window.innerHeight - 580;
       if (top < 10) top = 10;
       if (left < 10) left = 10;
       previewEl.style.left = `${left}px`; previewEl.style.top = `${top}px`;
@@ -1340,7 +1336,7 @@
       broadcastPlayerState();
     }
 
-    /* 手札からカードを出す時、裏側・表側の選択(右クリック等)に対応 */
+    /* 手札からカードを出す時、ドラッグ処理を開始 */
     function startHandCardDrag(e, card, wrapperEl) {
       e.preventDefault();
       hidePreview();
@@ -1431,7 +1427,7 @@
       cardEl.style.zIndex = data.zIndex || 10;
     }
 
-    /* 共有プレイエリアでの操作感修正：長押しでつかみ・離す、一度クリックで横向き、ダブルクリックでコントロール変更等 */
+    /* 共有プレイエリアでのカード操作（ドラッグで移動、枠への吸い付き、手札へ戻す処理） */
     function setupPlacedCardInteraction(cardEl, initialData) {
       let isDragging = false;
       let startX, startY, origX, origY;
@@ -1447,7 +1443,7 @@
       cardEl.onmousemove = (e) => movePreview(e);
       cardEl.onmouseleave = () => hidePreview();
 
-      /* クリック長押しで掴み、離して設置するイベント処理 */
+      /* クリック長押しで掴み、離して設置するイベント処理（ドラッグ移動） */
       cardEl.onmousedown = (e) => {
         if (e.button !== 0) return;
         clickStartTime = Date.now();
@@ -1560,6 +1556,7 @@
             return;
           }
 
+          /* カード固定枠に重ねられた場合のスナップ吸い付き移動 */
           const closest = findClosestSlot(me.clientX, me.clientY);
           let finalSlotOwner = null;
           let finalSlotIdx = null;
