@@ -165,7 +165,8 @@
     .zone { border: 2px dashed #475569; border-radius: 8px; padding: 6px; background: #0f172a; position: relative; }
     .zone-title { font-size: 11px; color: #94a3b8; text-align: center; }
 
-    button.game-btn { padding: 4px 8px; background: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; }
+    /* 縦方向サイズ変更: ボタン類の縦を大きく */
+    button.game-btn { padding: 8px 8px; background: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
     button.game-btn:hover { background: #6366f1; }
     #refresh-btn { background: #10b981; margin-top: 4px; width: 100%; display: none; }
     #refresh-btn:hover { background: #059669; }
@@ -207,7 +208,19 @@
     .card-rot-p3 { transform: rotate(-160deg); }
     .card-tapped { transform: rotate(90deg) !important; }
 
-    .left-action-zone { width: 100%; padding: 8px 4px; border: 1px dashed #475569; border-radius: 6px; text-align: center; font-size: 10px; }
+    /* 縦方向サイズ変更: 左側ゾーンの縦を少しだけ拡大 */
+    .left-action-zone { 
+      width: 100%; 
+      padding: 12px 4px; 
+      min-height: 42px;
+      border: 1px dashed #475569; 
+      border-radius: 6px; 
+      text-align: center; 
+      font-size: 11px; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     #score-add-zone { border-color: #38bdf8; background: #0369a1; color: #e0f2fe; }
     #deck-return-zone { border-color: #ef4444; background: #2c1215; color: #fca5a5; }
     #deck-bottom-zone { border-color: #f59e0b; background: #451a03; color: #fde68a; }
@@ -400,19 +413,19 @@
       <div id="score-bar"></div>
 
       <div id="main-board">
-        <div style="display: flex; flex-direction: column; gap: 4px; overflow-y: auto;">
+        <div style="display: flex; flex-direction: column; gap: 6px; overflow-y: auto;">
           <div class="zone">
             <div class="zone-title" id="deck-title">メイン (<span id="deck-count">23</span>)</div>
-            <button class="game-btn" onclick="drawCard()" style="width:100%; margin-top:2px;">1枚引く</button>
-            <button class="game-btn" onclick="revealTopDeckCard()" style="width:100%; margin-top:2px; background:#eab308; color:#000; font-weight:bold;">1枚めくる</button>
-            <button id="refresh-btn" class="game-btn" onclick="refreshDeck()" style="display:block;">墓地を戻してリフレッシュ</button>
-            <button class="game-btn" style="width:100%; margin-top:2px;" onclick="toggleDeckSearch()">検索</button>
+            <button class="game-btn" onclick="drawCard()" style="width:100%; margin-top:4px;">1枚引く</button>
+            <button class="game-btn" onclick="revealTopDeckCard()" style="width:100%; margin-top:4px; background:#eab308; color:#000; font-weight:bold;">1枚めくる</button>
+            <button id="refresh-btn" class="game-btn" onclick="refreshDeck()" style="display:block; margin-top:4px;">墓地を戻してリフレッシュ</button>
+            <button class="game-btn" style="width:100%; margin-top:4px;" onclick="toggleDeckSearch()">検索</button>
           </div>
           
-          <div class="zone" style="cursor:pointer;" onclick="revealLifeCard('left')">
+          <div class="zone" style="cursor:pointer; min-height:45px;" onclick="revealLifeCard('left')">
             <div class="zone-title">左ライフ (<span id="left-life-count">8</span>)<br><small style="color:#38bdf8;">めくる</small></div>
           </div>
-          <div class="zone" style="cursor:pointer;" onclick="revealLifeCard('right')">
+          <div class="zone" style="cursor:pointer; min-height:45px;" onclick="revealLifeCard('right')">
             <div class="zone-title">右ライフ (<span id="right-life-count">8</span>)<br><small style="color:#f43f5e;">めくる</small></div>
           </div>
           
@@ -436,7 +449,7 @@
           </div>
 
           <div class="left-action-zone" id="score-add-zone"><b>★獲得ライフに追加</b></div>
-          <div class="left-action-zone" id="deck-return-zone"><b>デッキ一番上に戻す</b></div>
+          <div class="left-action-zone" id="deck-return-zone"><b>デッキに戻す</b></div>
           <div class="left-action-zone" id="deck-bottom-zone"><b>デッキ一番下に戻す</b></div>
           <div class="left-action-zone" id="graveyard-zone"><b>自分の墓地 (<span id="gy-count">0</span>)</b></div>
         </div>
@@ -1309,11 +1322,14 @@
       };
     }
 
-    /* 1. 原因修正: 初期手札5枚（固定カード1枚＋山札から4枚）で開始 */
+    /* 初期手札（固定カード1枚＋メインデッキから4枚＝合計5枚）の修正処理 */
     function startGame() {
       document.getElementById('deck-builder-view').style.display = 'none';
       document.getElementById('battle-view').style.display = 'flex';
       document.getElementById('header-bar').style.display = 'none';
+
+      // 手札をリセット
+      document.getElementById('hand-cards').innerHTML = '';
 
       deckCards = [...mainDeck];
       shuffle(deckCards);
@@ -1326,7 +1342,7 @@
 
       createAllLockSlots();
 
-      // 初期手札の配布（固定カード1枚 ＋ 山札から4枚 ＝ 計5枚）
+      // 全プレイヤー共通: 選択した固定カード1枚 + メインデッキのトップから4枚でスタート (計5枚)
       if (selectedSpecialCard) {
         addCardToHand(selectedSpecialCard);
       }
@@ -1516,7 +1532,7 @@
       let posX = data.x;
       let posY = data.y;
 
-      /* 2. 固定枠のずらし配置を適用 */
+      /* 固定枠のずらし配置を適用 */
       if (data.slotOwnerIndex !== null && data.slotIndex !== null) {
         const slotPos = getSlotPosition(data.slotOwnerIndex, data.slotIndex, data.id);
         if (slotPos) {
@@ -1643,15 +1659,16 @@
             return;
           }
 
-          // デッキの一番上に戻す
+          // 「デッキに戻す」：デッキに追加後シャッフルを実施
           if (me.clientX >= returnZone.left && me.clientX <= returnZone.right && me.clientY >= returnZone.top && me.clientY <= returnZone.bottom) {
             deckCards.push(cardEl.cardDataObj);
+            shuffle(deckCards);
             removeBoardCard(cardEl.id);
             updateDeckStatus();
             return;
           }
 
-          /* 3. デッキの一番下に戻す機能 */
+          // 「デッキ一番下に戻す」
           if (me.clientX >= returnBottomZone.left && me.clientX <= returnBottomZone.right && me.clientY >= returnBottomZone.top && me.clientY <= returnBottomZone.bottom) {
             deckCards.unshift(cardEl.cardDataObj);
             removeBoardCard(cardEl.id);
@@ -1866,7 +1883,6 @@
       broadcastPlayerState();
     }
 
-    /* 4. 5. マナゾーンのタップ/アンタップ切り替え & 全アンタップ機能 */
     function renderManaZone() {
       const manaZone = document.getElementById('mana-zone');
       manaZone.querySelectorAll('.mana-card').forEach(m => m.remove());
@@ -1905,14 +1921,12 @@
             const duration = Date.now() - clickStartTime;
             const dist = Math.hypot(me.clientX - startX, me.clientY - startY);
 
-            // 単純クリック時の処理: タップ/アンタップ切り替え
             if (duration < 200 && dist < 5) {
               m.tapped = !m.tapped;
               renderManaZone();
               return;
             }
 
-            // 枠外へドラッグした場合の削除処理
             const zRect = manaZone.getBoundingClientRect();
             if (me.clientX < zRect.left || me.clientX > zRect.right || me.clientY < zRect.top || me.clientY > zRect.bottom) {
               localManaList = localManaList.filter(item => item.id !== m.id);
