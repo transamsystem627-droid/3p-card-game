@@ -112,7 +112,6 @@
     .card-item.selected { border-color: #f59e0b !important; box-shadow: 0 0 10px #f59e0b; }
     .card-img-thumb { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
 
-    /* 固定カード画像を全体が写るように(contain)に変更 */
     .special-card-item {
       height: 110px; background: #1e1b4b; border: 2px solid #a855f7; border-radius: 6px;
       cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center;
@@ -132,7 +131,6 @@
       padding: 20px 32px; text-align: center; font-size: 18px; font-weight: bold; color: #38bdf8; display: none; z-index: 1000;
     }
 
-    /* 拡大版プレビュー：サイズ (400px x 560px) */
     #hover-preview-card {
       position: fixed; width: 400px; height: 560px; background: #020617;
       border: 3px solid #38bdf8; border-radius: 12px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
@@ -140,7 +138,6 @@
     }
     #hover-preview-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
     
-    /* 裏面ダミープレビュー用スタイル */
     .preview-dummy-card {
       width: 100%; height: 100%; background: #0f172a; border: 2px dashed #475569;
       border-radius: 8px; display: flex; align-items: center; justify-content: center;
@@ -173,15 +170,23 @@
     #refresh-btn { background: #10b981; margin-top: 4px; width: 100%; display: none; }
     #refresh-btn:hover { background: #059669; }
 
-    #mana-zone { border-color: #3b82f6; background: #091e3a; height: 80px; position: relative; overflow: hidden; }
+    #mana-zone { border-color: #3b82f6; background: #091e3a; height: 80px; position: relative; overflow: hidden; display: flex; align-items: center; padding-right: 120px; }
     .mana-btn { padding: 2px 6px; font-size: 10px; border-radius: 3px; border: none; color: white; cursor: pointer; }
-    .mana-card { width: 42px; height: 60px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: grab; user-select: none; position: absolute; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 5; transition: transform 0.1s; }
+    .mana-card { width: 42px; height: 60px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: grab; user-select: none; position: absolute; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 5; transition: transform 0.15s; }
     .mana-card:active { cursor: grabbing; }
     .mana-red { background: #ef4444; color: #fff; }
     .mana-yellow { background: #eab308; color: #000; }
     .mana-blue { background: #3b82f6; color: #fff; }
     .mana-purple { background: #a855f7; color: #fff; }
     .mana-card.tapped { transform: rotate(90deg); }
+
+    .btn-untap-all {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      padding: 6px 10px; background: #38bdf8; color: #0f172a; font-weight: bold;
+      font-size: 11px; border: none; border-radius: 4px; cursor: pointer; z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4); transition: 0.2s;
+    }
+    .btn-untap-all:hover { background: #7dd3fc; }
 
     .dummy-card {
       width: 60px; height: 84px; background: #1e293b; border: 2px solid #94a3b8; border-radius: 4px;
@@ -202,16 +207,16 @@
     .card-rot-p3 { transform: rotate(-160deg); }
     .card-tapped { transform: rotate(90deg) !important; }
 
-    .left-action-zone { width: 100%; padding: 12px 4px; border: 1px dashed #475569; border-radius: 6px; text-align: center; font-size: 11px; }
+    .left-action-zone { width: 100%; padding: 8px 4px; border: 1px dashed #475569; border-radius: 6px; text-align: center; font-size: 10px; }
     #score-add-zone { border-color: #38bdf8; background: #0369a1; color: #e0f2fe; }
     #deck-return-zone { border-color: #ef4444; background: #2c1215; color: #fca5a5; }
+    #deck-bottom-zone { border-color: #f59e0b; background: #451a03; color: #fde68a; }
     #graveyard-zone { border-color: #8b5cf6; background: #2e1065; color: #ddd6fe; cursor: pointer; }
 
     #bottom-hand-panel { height: 145px; background: #0f172a; border: 2px dashed #10b981; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; }
     #hand-cards { display: flex; gap: 8px; overflow-x: auto; flex: 1; align-items: center; padding-top: 2px; }
     .hand-card-wrapper { display: flex; flex-direction: column; align-items: center; gap: 4px; }
     
-    /* 裏で出すボタンのスタイル */
     .btn-facedown {
       padding: 2px 6px; font-size: 9px; border: 1px solid #475569; background: #1e293b;
       color: #cbd5e1; border-radius: 4px; cursor: grab; user-select: none; transition: 0.15s;
@@ -250,7 +255,6 @@
     #p2-overlay-info { left: 8px; border-left: 3px solid #38bdf8; }
     #p3-overlay-info { right: 8px; border-right: 3px solid #f43f5e; }
 
-    /* 棒（ゲージ・壁）のスタイリング */
     .bar-track-container {
       position: absolute; background: rgba(15, 23, 42, 0.7);
       border: 1px solid #334155; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; padding: 6px 12px; z-index: 20;
@@ -279,8 +283,9 @@
     .counter-box { margin-top: 4px; padding: 4px; background: #1e1b4b; border: 1px solid #6366f1; border-radius: 6px; text-align: center; }
     .counter-btn { width: 22px; height: 22px; padding: 0; font-weight: bold; font-size: 12px; border-radius: 4px; background: #4f46e5; color: #fff; border: none; cursor: pointer; }
 
+    /* モーダル表示サイズを拡大（420px x 588px） */
     #life-reveal-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(6px); }
-    #modal-card { width: 240px; height: 336px; background: #020617; border: 4px solid #38bdf8; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 10px; overflow: hidden; }
+    #modal-card { width: 420px; height: 588px; background: #020617; border: 4px solid #38bdf8; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 10px; overflow: hidden; }
     #modal-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
   </style>
 </head>
@@ -431,7 +436,8 @@
           </div>
 
           <div class="left-action-zone" id="score-add-zone"><b>★獲得ライフに追加</b></div>
-          <div class="left-action-zone" id="deck-return-zone"><b>デッキに戻す</b></div>
+          <div class="left-action-zone" id="deck-return-zone"><b>デッキ一番上に戻す</b></div>
+          <div class="left-action-zone" id="deck-bottom-zone"><b>デッキ一番下に戻す</b></div>
           <div class="left-action-zone" id="graveyard-zone"><b>自分の墓地 (<span id="gy-count">0</span>)</b></div>
         </div>
 
@@ -489,7 +495,8 @@
           </div>
           
           <div class="zone" id="mana-zone">
-            <div class="zone-title">自分のマナゾーン (枠外へドラッグで削除)</div>
+            <div class="zone-title" style="margin-right:12px;">自分のマナゾーン<br><small>(枠外ドラッグで削除)</small></div>
+            <button class="btn-untap-all" onclick="untapAllMana()">すべてのマナを起こす</button>
           </div>
         </div>
       </div>
@@ -529,7 +536,7 @@
 
   <div id="pass-notice">全員決定！パックを回転します ➔</div>
 
-  <!-- ホバー画像プレビュー（画像またはダミーカード） -->
+  <!-- ホバー画像プレビュー -->
   <div id="hover-preview-card"></div>
 
   <script>
@@ -636,13 +643,11 @@
     let playerSelectedCards = [null, null, null];
     let playerDeckReady = [false, false, false];
 
-    /* ドラフト開始 */
     function startDraft() {
       document.getElementById('lobby-view').style.display = 'none';
       let deck = [...masterDeck];
       shuffle(deck);
 
-      // 351枚の中からランダムに117枚を選出し、13枚×9個のパックに分割
       let selectedPool = deck.slice(0, 117);
       let allPacks = [];
       for (let i = 0; i < 9; i++) {
@@ -651,14 +656,12 @@
 
       const draftInitData = {
         type: 'START_DRAFT',
-        payload: {
-          allPacks: allPacks
-        }
+        payload: { allPacks: allPacks }
       };
 
       if (isHost) {
         initDraftLocal(allPacks);
-        connections.forEach((c, idx) => {
+        connections.forEach((c) => {
           if (c && c.open) {
             c.send(draftInitData);
           }
@@ -678,7 +681,6 @@
       currentRound = roundNum;
       currentPick = 1;
       
-      // ラウンドに応じた3パックを割り当て
       const baseIdx = (roundNum - 1) * 3;
       playerPacks = [
         roundPacksPool[baseIdx],
@@ -743,7 +745,6 @@
       document.getElementById('confirm-btn').disabled = true;
       document.getElementById('confirm-btn').innerText = '他のプレイヤーを待機中...';
 
-      // 自分以外のプレイヤーに選択状態を送信
       broadcast({
         type: 'PLAYER_PICK_READY',
         payload: { playerIndex: myPlayerIndex, selectedCard: selectedCard }
@@ -751,7 +752,6 @@
     }
 
     function processPassPacks() {
-      // 1. 各プレイヤーが選択したカードを手元のパックから削除し、個人の獲得カードへ移動
       for (let i = 0; i < 3; i++) {
         const picked = playerSelectedCards[i];
         if (picked) {
@@ -766,15 +766,13 @@
 
       renderPickedCards();
 
-      // 2. 残った12枚（または減った分）のパックをプレイヤー間で回転 (P1->P2, P2->P3, P3->P1)
       const newPacks = [
-        playerPacks[2], // P3から渡されたパック
-        playerPacks[0], // P1から渡されたパック
-        playerPacks[1]  // P2から渡されたパック
+        playerPacks[2],
+        playerPacks[0],
+        playerPacks[1]
       ];
       playerPacks = newPacks;
 
-      // 3. 準備状態リセット
       playerPickReady = [false, false, false];
       playerSelectedCards = [null, null, null];
 
@@ -783,7 +781,6 @@
         if (currentRound < 3) {
           startRound(currentRound + 1);
         } else {
-          // ドラフト完了 -> デッキ構築画面へ
           initDeckBuilder();
         }
       } else {
@@ -997,7 +994,6 @@
       }
     }
 
-    /* P1視点・各プレイヤー視点でのスコアバーのレンダリング */
     function renderScoreBar() {
       const scoreBar = document.getElementById('score-bar');
       if (!scoreBar) return;
@@ -1285,7 +1281,8 @@
       return closestSlot;
     }
 
-    function getSlotPosition(slotOwnerIndex, slotIndex) {
+    /* 固定枠スロット内のカード重なり計算（左上に1枚につき8pxずつずらす） */
+    function getSlotPosition(slotOwnerIndex, slotIndex, cardId) {
       const table = document.getElementById('zone-table');
       const tableRect = table.getBoundingClientRect();
       
@@ -1296,13 +1293,23 @@
       const targetSlot = slots[slotIndex];
       if (!targetSlot) return null;
 
+      // 同じ固定枠内に重なっているカードの一覧を取得
+      const placedCards = Array.from(document.querySelectorAll(`.placed-card[data-slot-owner="${slotOwnerIndex}"][data-slot-idx="${slotIndex}"]`));
+      placedCards.sort((a, b) => (parseInt(a.style.zIndex) || 0) - (parseInt(b.style.zIndex) || 0));
+
+      let stackIndex = placedCards.findIndex(el => el.id === cardId);
+      if (stackIndex === -1) stackIndex = placedCards.length;
+
+      const offset = stackIndex * 8; // 重なるごとに左上に8pxずらす
+
       const slotRect = targetSlot.getBoundingClientRect();
       return {
-        x: slotRect.left - tableRect.left + (slotRect.width - 60) / 2,
-        y: slotRect.top - tableRect.top + (slotRect.height - 84) / 2
+        x: slotRect.left - tableRect.left + (slotRect.width - 60) / 2 - offset,
+        y: slotRect.top - tableRect.top + (slotRect.height - 84) / 2 - offset
       };
     }
 
+    /* 1. 原因修正: 初期手札5枚（固定カード1枚＋山札から4枚）で開始 */
     function startGame() {
       document.getElementById('deck-builder-view').style.display = 'none';
       document.getElementById('battle-view').style.display = 'flex';
@@ -1319,6 +1326,7 @@
 
       createAllLockSlots();
 
+      // 初期手札の配布（固定カード1枚 ＋ 山札から4枚 ＝ 計5枚）
       if (selectedSpecialCard) {
         addCardToHand(selectedSpecialCard);
       }
@@ -1393,7 +1401,6 @@
       updateDeckStatus();
     }
 
-    /* デッキの一番上のカードをめくる */
     function revealTopDeckCard() {
       if (deckCards.length === 0) return alert('デッキが空です');
       currentRevealedLifeCard = deckCards.pop();
@@ -1419,7 +1426,6 @@
 
       cardEl.onmousedown = (e) => startHandCardDrag(e, card, wrapper, false);
 
-      /* 手札の下部に「裏で出す」ボタンを追加 */
       const faceDownBtn = document.createElement('button');
       faceDownBtn.className = 'btn-facedown';
       faceDownBtn.innerText = '裏で出す';
@@ -1510,8 +1516,9 @@
       let posX = data.x;
       let posY = data.y;
 
+      /* 2. 固定枠のずらし配置を適用 */
       if (data.slotOwnerIndex !== null && data.slotIndex !== null) {
-        const slotPos = getSlotPosition(data.slotOwnerIndex, data.slotIndex);
+        const slotPos = getSlotPosition(data.slotOwnerIndex, data.slotIndex, data.id);
         if (slotPos) {
           posX = slotPos.x;
           posY = slotPos.y;
@@ -1523,7 +1530,6 @@
       cardEl.style.zIndex = data.zIndex || 10;
     }
 
-    /* 共有エリアのカードドラッグ・タップ制御 */
     function setupPlacedCardInteraction(cardEl, initialData) {
       let isDragging = false;
       let startX, startY, origX, origY;
@@ -1586,14 +1592,12 @@
           const dragDuration = Date.now() - clickStartTime;
           const moveDist = Math.hypot(me.clientX - startX, me.clientY - startY);
 
-          /* クリック判定（短時間かつ一定以上の移動がない場合） */
           if (dragDuration < 200 && moveDist < 5) {
             const isFaceDown = cardEl.getAttribute('data-facedown') === 'true';
             const ownerIdx = parseInt(cardEl.getAttribute('data-owner'));
             const inLockSlot = cardEl.getAttribute('data-slot-owner') !== '';
 
             if (isFaceDown) {
-              /* 裏向きのカードはクリックで表にする（横向きにはしない） */
               const cardData = {
                 id: cardEl.id, card: cardEl.cardDataObj, ownerIndex: ownerIdx,
                 x: origX, y: origY, faceDown: false,
@@ -1605,7 +1609,6 @@
               broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
               updatePlacedCardDOM(cardEl, cardData);
             } else if (inLockSlot) {
-              /* 表向きで固定枠にある場合のみクリックで横向き（タップ）/縦向き（アンタップ）を切り替え */
               const isTapped = cardEl.getAttribute('data-tapped') === 'true';
               const cardData = {
                 id: cardEl.id, card: cardEl.cardDataObj, ownerIndex: ownerIdx,
@@ -1621,7 +1624,6 @@
             return;
           }
 
-          /* 手札ゾーンにドロップした時の処理 */
           const handPanel = document.getElementById('bottom-hand-panel').getBoundingClientRect();
           if (me.clientX >= handPanel.left && me.clientX <= handPanel.right && me.clientY >= handPanel.top && me.clientY <= handPanel.bottom) {
             addCardToHand(cardEl.cardDataObj);
@@ -1631,6 +1633,7 @@
 
           const scoreZone = document.getElementById('score-add-zone').getBoundingClientRect();
           const returnZone = document.getElementById('deck-return-zone').getBoundingClientRect();
+          const returnBottomZone = document.getElementById('deck-bottom-zone').getBoundingClientRect();
           const gyZone = document.getElementById('graveyard-zone').getBoundingClientRect();
 
           if (me.clientX >= scoreZone.left && me.clientX <= scoreZone.right && me.clientY >= scoreZone.top && me.clientY <= scoreZone.bottom) {
@@ -1640,7 +1643,16 @@
             return;
           }
 
+          // デッキの一番上に戻す
           if (me.clientX >= returnZone.left && me.clientX <= returnZone.right && me.clientY >= returnZone.top && me.clientY <= returnZone.bottom) {
+            deckCards.push(cardEl.cardDataObj);
+            removeBoardCard(cardEl.id);
+            updateDeckStatus();
+            return;
+          }
+
+          /* 3. デッキの一番下に戻す機能 */
+          if (me.clientX >= returnBottomZone.left && me.clientX <= returnBottomZone.right && me.clientY >= returnBottomZone.top && me.clientY <= returnBottomZone.bottom) {
             deckCards.unshift(cardEl.cardDataObj);
             removeBoardCard(cardEl.id);
             updateDeckStatus();
@@ -1655,7 +1667,6 @@
             return;
           }
 
-          /* 固定枠へのスナップ移動判定 */
           const closest = findClosestSlot(me.clientX, me.clientY);
           let finalSlotOwner = null;
           let finalSlotIdx = null;
@@ -1709,7 +1720,7 @@
       let posY = data.y;
 
       if (data.slotOwnerIndex !== null && data.slotIndex !== null) {
-        const slotPos = getSlotPosition(data.slotOwnerIndex, data.slotIndex);
+        const slotPos = getSlotPosition(data.slotOwnerIndex, data.slotIndex, data.id);
         if (slotPos) {
           posX = slotPos.x;
           posY = slotPos.y;
@@ -1779,7 +1790,6 @@
       syncBoardCardLocal(cardData);
     }
 
-    /* 共有プレイエリア（盤面）へのドラッグ＆ドロップ受け取り処理 */
     function handleTableDrop(e) {
       e.preventDefault();
       const cardDataStr = e.dataTransfer.getData('text/plain');
@@ -1849,7 +1859,6 @@
     }
 
     function spawnMana(color) {
-      const manaZone = document.getElementById('mana-zone');
       const manaId = 'mana_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
       const manaObj = { id: manaId, color: color, tapped: false };
       localManaList.push(manaObj);
@@ -1857,6 +1866,7 @@
       broadcastPlayerState();
     }
 
+    /* 4. 5. マナゾーンのタップ/アンタップ切り替え & 全アンタップ機能 */
     function renderManaZone() {
       const manaZone = document.getElementById('mana-zone');
       manaZone.querySelectorAll('.mana-card').forEach(m => m.remove());
@@ -1869,7 +1879,7 @@
         mEl.className = `mana-card mana-${m.color}` + (m.tapped ? ' tapped' : '');
         mEl.innerText = m.color.substring(0, 1).toUpperCase();
         mEl.style.left = `${10 + idx * 46}px`;
-        mEl.style.top = `24px`;
+        mEl.style.top = `10px`;
 
         let isDragging = false, startX, startY;
         let clickStartTime = 0;
@@ -1895,12 +1905,14 @@
             const duration = Date.now() - clickStartTime;
             const dist = Math.hypot(me.clientX - startX, me.clientY - startY);
 
+            // 単純クリック時の処理: タップ/アンタップ切り替え
             if (duration < 200 && dist < 5) {
               m.tapped = !m.tapped;
               renderManaZone();
               return;
             }
 
+            // 枠外へドラッグした場合の削除処理
             const zRect = manaZone.getBoundingClientRect();
             if (me.clientX < zRect.left || me.clientX > zRect.right || me.clientY < zRect.top || me.clientY > zRect.bottom) {
               localManaList = localManaList.filter(item => item.id !== m.id);
@@ -1912,12 +1924,17 @@
             }
           };
 
-          window.addEventListener('mousemove', onMouseMove);
-          window.addEventListener('mouseup', onMouseUp);
+          window.addEventListener('mousemove', onMM);
+          window.addEventListener('mouseup', onMU);
         };
 
         manaZone.appendChild(mEl);
       });
+    }
+
+    function untapAllMana() {
+      localManaList.forEach(m => m.tapped = false);
+      renderManaZone();
     }
 
     function updateTrinity(val) {
