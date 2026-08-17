@@ -632,43 +632,58 @@
     let selectedCard = null;
     let pickedCards = [];
     let playerPickReady = [false, false, false];
+    let playerSelectedCards = [null, null, null];
     let playerDeckReady = [false, false, false];
-    let unusedPacksPool = []; // 余りの6パックを保持
 
     /* ドラフト開始 */
     function startDraft() {
       document.getElementById('lobby-view').style.display = 'none';
-      
-      let pool = [...masterDeck];
-      shuffle(pool);
-      let selected117Cards = pool.slice(0, 117); // 351枚中からランダムに117枚を選出[cite: 9]
+      let deck = [...masterDeck];
+      shuffle(deck);
 
-      // 13枚入りのパックを9つ作成[cite: 9]
-      let all9Packs = [];
+      // 351枚の中からランダムに117枚を選出し、13枚×9個のパックに分割
+      let selectedPool = deck.slice(0, 117);
+      let allPacks = [];
       for (let i = 0; i < 9; i++) {
-        all9Packs.push(selected117Cards.splice(0, 13));
+        allPacks.push(selectedPool.splice(0, 13));
       }
 
+      const draftInitData = {
+        type: 'START_DRAFT',
+        payload: {
+          allPacks: allPacks
+        }
+      };
+
       if (isHost) {
-        initDraftLocal(all9Packs);
-        broadcast({
-          type: 'START_DRAFT',
-          payload: { all9Packs: all9Packs }
+        initDraftLocal(allPacks);
+        connections.forEach((c, idx) => {
+          if (c && c.open) {
+            c.send(draftInitData);
+          }
         });
       }
     }
 
-    function initDraftLocal(all9Packs) {
+    let roundPacksPool = [];
+
+    function initDraftLocal(allPacks) {
       document.getElementById('lobby-view').style.display = 'none';
-      
-      // 最初の3パックをP1, P2, P3に1パックずつ配る[cite: 9]
-      playerPacks = [all9Packs[0], all9Packs[1], all9Packs[2]];
-      
-      // 残り6パックを保管[cite: 9]
-      unusedPacksPool = all9Packs.slice(3);
-      
-      currentRound = 1;
+      roundPacksPool = allPacks;
+      startRound(1);
+    }
+
+    function startRound(roundNum) {
+      currentRound = roundNum;
       currentPick = 1;
+      
+      // ラウンドに応じた3パックを割り当て
+      const baseIdx = (roundNum - 1) * 3;
+      playerPacks = [
+        roundPacksPool[baseIdx],
+        roundPacksPool[baseIdx + 1],
+        roundPacksPool[baseIdx + 2]
+      ];
 
       updateDraftUI();
       renderPackCards();
@@ -677,8 +692,8 @@
     function updateDraftUI() {
       document.getElementById('round-num').innerText = currentRound;
       document.getElementById('pick-num').innerText = currentPick;
-      document.getElementById('remaining-packs').innerText = 9 - ((currentRound - 1) * 3);
-      document.getElementById('pack-count-label').innerText = `残 ${playerPacks[myPlayerIndex] ? playerPacks[myPlayerIndex].length : 0} 枚`;
+      document.getElementById('remaining-packs').innerText = 9 - (currentRound - 1) * 3 - Math.floor((currentPick - 1) / 13) * 3;
+      document.getElementById('pack-count-label').innerText = `残 ${playerPacks[myPlayerIndex].length} 枚`;
       
       for (let i = 0; i < 3; i++) {
         const statusEl = document.getElementById(`p${i + 1}-status`);
@@ -723,6 +738,7 @@
       if (!selectedCard || playerPickReady[myPlayerIndex]) return;
       
       playerPickReady[myPlayerIndex] = true;
+      playerSelectedCards[myPlayerIndex] = selectedCard;
       document.getElementById('confirm-btn').disabled = true;
       document.getElementById('confirm-btn').innerText = '他のプレイヤーを待機中...';
 
@@ -734,45 +750,39 @@
     }
 
     function processPassPacks() {
-      // 獲得カードへ追加し、手元パックから削除
-      const mySelected = selectedCard;
-      if (mySelected) {
-        pickedCards.push(mySelected);
-        const p = playerPacks[myPlayerIndex];
-        const idx = p.findIndex(c => c.id === mySelected.id);
-        if (idx !== -1) p.splice(idx, 1);
+      // 1. 各プレイヤーが選択したカードを手元のパックから削除し、個人の獲得カードへ移動
+      for (let i = 0; i < 3; i++) {
+        const picked = playerSelectedCards[i];
+        if (picked) {
+          if (i === myPlayerIndex) {
+            pickedCards.push(picked);
+          }
+          const p = playerPacks[i];
+          const idx = p.findIndex(c => c.id === picked.id);
+          if (idx !== -1) p.splice(idx, 1);
+        }
       }
 
       renderPickedCards();
 
-      // パックの受け渡し：プレイヤー1は2に、プレイヤー2は3に、プレイヤー3は1に渡す (P0 -> P1, P1 -> P2, P2 -> P0)[cite: 9]
+      // 2. 残った12枚（または減った分）のパックをプレイヤー間で回転 (P1->P2, P2->P3, P3->P1)
       const newPacks = [
-        playerPacks[2], // P3からP1へ
-        playerPacks[0], // P1からP2へ
-        playerPacks[1]  // P2からP3へ
+        playerPacks[2], // P3から渡されたパック
+        playerPacks[0], // P1から渡されたパック
+        playerPacks[1]  // P2から渡されたパック
       ];
       playerPacks = newPacks;
 
-      // 準備状態リセット
+      // 3. 準備状態リセット
       playerPickReady = [false, false, false];
+      playerSelectedCards = [null, null, null];
 
       currentPick++;
-
-      // パックのカードがなくなったら（13回ピック完了したら）[cite: 9]
-      if (playerPacks[0].length === 0) {
-        if (unusedPacksPool.length > 0) {
-          // 残りのパックから新たに3パックを取り出して各プレイヤーに配る[cite: 9]
-          playerPacks = [
-            unusedPacksPool.shift(),
-            unusedPacksPool.shift(),
-            unusedPacksPool.shift()
-          ];
-          currentRound++;
-          currentPick = 1;
-          updateDraftUI();
-          renderPackCards();
+      if (currentPick > 13) {
+        if (currentRound < 3) {
+          startRound(currentRound + 1);
         } else {
-          // 全9パックをすべて消費したらデッキ構築フェーズへ移動[cite: 9]
+          // ドラフト完了 -> デッキ構築画面へ
           initDeckBuilder();
         }
       } else {
@@ -934,10 +944,11 @@
           myPlayerIndex = data.payload.index;
           break;
         case 'START_DRAFT':
-          initDraftLocal(data.payload.all9Packs);
+          initDraftLocal(data.payload.allPacks);
           break;
         case 'PLAYER_PICK_READY':
           playerPickReady[data.payload.playerIndex] = true;
+          playerSelectedCards[data.payload.playerIndex] = data.payload.selectedCard;
           updateDraftUI();
           if (playerPickReady.every(r => r === true)) {
             const notice = document.getElementById('pass-notice');
@@ -1828,8 +1839,8 @@
             }
           };
 
-          window.addEventListener('mousemove', onMouseMove);
-          window.addEventListener('mouseup', onMouseUp);
+          window.addEventListener('mousemove', onMM);
+          window.addEventListener('mouseup', onMU);
         };
 
         manaZone.appendChild(mEl);
