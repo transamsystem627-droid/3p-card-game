@@ -112,10 +112,12 @@
     .card-item.selected { border-color: #f59e0b !important; box-shadow: 0 0 10px #f59e0b; }
     .card-img-thumb { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
 
+    /* 固定カード画像を全体が写るように(contain)に変更 */
     .special-card-item {
       height: 110px; background: #1e1b4b; border: 2px solid #a855f7; border-radius: 6px;
       cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center;
     }
+    .special-card-item img { object-fit: contain; }
     .special-card-item.active { border-color: #f59e0b !important; box-shadow: 0 0 12px rgba(245, 158, 11, 0.8); }
 
     .action-btn {
@@ -130,9 +132,9 @@
       padding: 20px 32px; text-align: center; font-size: 18px; font-weight: bold; color: #38bdf8; display: none; z-index: 1000;
     }
 
-    /* 拡大版ドラフト・デッキ構築・対戦共通プレビュー（サイズ拡大） */
+    /* 拡大版プレビュー：サイズをさらに大きく変更 (650px x 910px) */
     #hover-preview-card {
-      position: fixed; width: 450px; height: 630px; background: #020617;
+      position: fixed; width: 650px; height: 910px; background: #020617;
       border: 3px solid #38bdf8; border-radius: 12px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
       display: none; pointer-events: none; z-index: 300000; padding: 6px; overflow: hidden;
     }
@@ -166,7 +168,7 @@
 
     #mana-zone { border-color: #3b82f6; background: #091e3a; height: 80px; position: relative; overflow: hidden; }
     .mana-btn { padding: 2px 6px; font-size: 10px; border-radius: 3px; border: none; color: white; cursor: pointer; }
-    .mana-card { width: 42px; height: 60px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: grab; user-select: none; position: absolute; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 5; }
+    .mana-card { width: 42px; height: 60px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: grab; user-select: none; position: absolute; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 5; transition: transform 0.1s; }
     .mana-card:active { cursor: grabbing; }
     .mana-red { background: #ef4444; color: #fff; }
     .mana-yellow { background: #eab308; color: #000; }
@@ -174,7 +176,6 @@
     .mana-purple { background: #a855f7; color: #fff; }
     .mana-card.tapped { transform: rotate(90deg); }
 
-    /* ダミーカード（ボード用）も画像のみ表示 */
     .dummy-card {
       width: 60px; height: 84px; background: #1e293b; border: 2px solid #94a3b8; border-radius: 4px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
@@ -383,7 +384,8 @@
           <div class="zone">
             <div class="zone-title" id="deck-title">メイン (<span id="deck-count">23</span>)</div>
             <button class="game-btn" onclick="drawCard()" style="width:100%; margin-top:2px;">1枚引く</button>
-            <button id="refresh-btn" class="game-btn" onclick="refreshDeck()">墓地を戻してリフレッシュ</button>
+            <!-- 常時表示されるリフレッシュボタン -->
+            <button id="refresh-btn" class="game-btn" onclick="refreshDeck()" style="display:block;">墓地を戻してリフレッシュ</button>
             <button class="game-btn" style="width:100%; margin-top:2px;" onclick="toggleDeckSearch()">検索</button>
           </div>
           
@@ -740,11 +742,12 @@
       });
     }
 
+    /* P1画面でのプレイヤー順序修正：左から「P2、P1、P3」順に表示 */
     function renderScoreBar() {
       const scoreBar = document.getElementById('score-bar');
       if (!scoreBar) return;
 
-      let order = [1, 0, 2];
+      let order = [1, 0, 2]; // デフォルト: P2, P1, P3
       if (myPlayerIndex === 1) {
         order = [2, 1, 0];
       } else if (myPlayerIndex === 2) {
@@ -960,7 +963,7 @@
       updateStatusTags();
     }
 
-    /* カード要素作成（テキスト削除・画像のみ表示） */
+    /* カード要素作成 (ドラッグドロップ対応拡張) */
     function createCardElement(card, onClick) {
       const cardEl = document.createElement('div');
       cardEl.className = 'card-item';
@@ -984,8 +987,8 @@
 
     function movePreview(event) {
       let left = event.clientX + 20, top = event.clientY + 20;
-      if (left + 460 > window.innerWidth) left = event.clientX - 480;
-      if (top + 640 > window.innerHeight) top = window.innerHeight - 650;
+      if (left + 660 > window.innerWidth) left = event.clientX - 670;
+      if (top + 920 > window.innerHeight) top = window.innerHeight - 930;
       if (top < 10) top = 10;
       if (left < 10) left = 10;
       previewEl.style.left = `${left}px`; previewEl.style.top = `${top}px`;
@@ -1227,7 +1230,9 @@
     function startGame() {
       document.getElementById('deck-builder-view').style.display = 'none';
       document.getElementById('battle-view').style.display = 'flex';
-      document.getElementById('phase-title').innerText = '⚔️ 対戦フェーズ';
+
+      /* 対戦中に一番上に表示される対戦フェーズ表示(Header)を非表示に変更 */
+      document.getElementById('header-bar').style.display = 'none';
 
       deckCards = [...mainDeck];
       shuffle(deckCards);
@@ -1257,7 +1262,6 @@
 
     function updateDeckStatus() {
       document.getElementById('deck-count').innerText = deckCards.length;
-      document.getElementById('refresh-btn').style.display = (deckCards.length === 0 && graveyards[myPlayerIndex].length > 0) ? 'block' : 'none';
       playerStates[myPlayerIndex].deckCount = deckCards.length;
       broadcastPlayerState();
     }
@@ -1336,6 +1340,7 @@
       broadcastPlayerState();
     }
 
+    /* 手札からカードを出す時、裏側・表側の選択(右クリック等)に対応 */
     function startHandCardDrag(e, card, wrapperEl) {
       e.preventDefault();
       hidePreview();
@@ -1346,6 +1351,9 @@
       const startX = e.clientX - tableRect.left - 30;
       const startY = e.clientY - tableRect.top - 42;
 
+      // 右クリック(button=2)で出す場合は裏側で手札から出す
+      const faceDownMode = (e.button === 2);
+
       wrapperEl.remove();
       broadcastPlayerState();
 
@@ -1355,7 +1363,7 @@
         ownerIndex: myPlayerIndex,
         x: startX,
         y: startY,
-        faceDown: false,
+        faceDown: faceDownMode,
         tapped: false,
         slotOwnerIndex: null,
         slotIndex: null
@@ -1423,9 +1431,11 @@
       cardEl.style.zIndex = data.zIndex || 10;
     }
 
+    /* 共有プレイエリアでの操作感修正：長押しでつかみ・離す、一度クリックで横向き、ダブルクリックでコントロール変更等 */
     function setupPlacedCardInteraction(cardEl, initialData) {
       let isDragging = false;
       let startX, startY, origX, origY;
+      let clickStartTime = 0;
 
       cardEl.onmouseenter = (e) => {
         const isFaceDown = cardEl.getAttribute('data-facedown') === 'true';
@@ -1437,13 +1447,14 @@
       cardEl.onmousemove = (e) => movePreview(e);
       cardEl.onmouseleave = () => hidePreview();
 
+      /* クリック長押しで掴み、離して設置するイベント処理 */
       cardEl.onmousedown = (e) => {
         if (e.button !== 0) return;
+        clickStartTime = Date.now();
         isDragging = true;
         highestZIndex++;
         cardEl.style.zIndex = highestZIndex;
 
-        const tableRect = document.getElementById('zone-table').getBoundingClientRect();
         startX = e.clientX;
         startY = e.clientY;
         origX = parseFloat(cardEl.style.left) || 0;
@@ -1478,8 +1489,51 @@
 
           document.querySelectorAll('.lock-slot').forEach(s => s.style.borderColor = '#475569');
 
-          const table = document.getElementById('zone-table');
-          const tRect = table.getBoundingClientRect();
+          const dragDuration = Date.now() - clickStartTime;
+          const moveDist = Math.hypot(me.clientX - startX, me.clientY - startY);
+
+          /* 単純なクリック動作(短時間かつ移動が少ない)の場合 */
+          if (dragDuration < 200 && moveDist < 5) {
+            const isFaceDown = cardEl.getAttribute('data-facedown') === 'true';
+            const ownerIdx = parseInt(cardEl.getAttribute('data-owner'));
+
+            // 裏側で出されたカードを持ち主が一度クリックすると表になる
+            if (isFaceDown && ownerIdx === myPlayerIndex) {
+              const cardData = {
+                id: cardEl.id, card: cardEl.cardDataObj, ownerIndex: ownerIdx,
+                x: origX, y: origY, faceDown: false,
+                tapped: cardEl.getAttribute('data-tapped') === 'true',
+                slotOwnerIndex: cardEl.getAttribute('data-slot-owner') !== '' ? parseInt(cardEl.getAttribute('data-slot-owner')) : null,
+                slotIndex: cardEl.getAttribute('data-slot-idx') !== '' ? parseInt(cardEl.getAttribute('data-slot-idx')) : null,
+                zIndex: highestZIndex
+              };
+              broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
+              updatePlacedCardDOM(cardEl, cardData);
+            } else {
+              // 一度クリックすると横向き(タップ)・縦向きに戻るトグル
+              const isTapped = cardEl.getAttribute('data-tapped') === 'true';
+              const cardData = {
+                id: cardEl.id, card: cardEl.cardDataObj, ownerIndex: ownerIdx,
+                x: origX, y: origY, faceDown: isFaceDown,
+                tapped: !isTapped,
+                slotOwnerIndex: cardEl.getAttribute('data-slot-owner') !== '' ? parseInt(cardEl.getAttribute('data-slot-owner')) : null,
+                slotIndex: cardEl.getAttribute('data-slot-idx') !== '' ? parseInt(cardEl.getAttribute('data-slot-idx')) : null,
+                zIndex: highestZIndex
+              };
+              broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
+              updatePlacedCardDOM(cardEl, cardData);
+            }
+            return;
+          }
+
+          /* ドラッグアウトして手札ゾーンに離した場合、手札に加わる */
+          const handPanel = document.getElementById('bottom-hand-panel').getBoundingClientRect();
+          if (me.clientX >= handPanel.left && me.clientX <= handPanel.right && me.clientY >= handPanel.top && me.clientY <= handPanel.bottom) {
+            addCardToHand(cardEl.cardDataObj);
+            removeBoardCard(cardEl.id);
+            return;
+          }
+
           const scoreZone = document.getElementById('score-add-zone').getBoundingClientRect();
           const returnZone = document.getElementById('deck-return-zone').getBoundingClientRect();
           const gyZone = document.getElementById('graveyard-zone').getBoundingClientRect();
@@ -1542,43 +1596,10 @@
         window.addEventListener('mouseup', onMouseUp);
       };
 
-      cardEl.oncontextmenu = (e) => {
-        e.preventDefault();
-        const currentOwner = parseInt(cardEl.getAttribute('data-owner'));
-        const nextOwner = (currentOwner + 1) % 3;
-        broadcast({ type: 'CHANGE_CARD_OWNER', payload: { id: cardEl.id, ownerIndex: nextOwner } });
-        changeCardOwnerLocal({ id: cardEl.id, ownerIndex: nextOwner });
-      };
-
+      /* ダブルクリックで、そのカードを自分のコントロールするカードとして所有権を変更 */
       cardEl.ondblclick = () => {
-        const isTapped = cardEl.getAttribute('data-tapped') === 'true';
-        const isFaceDown = cardEl.getAttribute('data-facedown') === 'true';
-        let newTapped = !isTapped;
-        let newFaceDown = isFaceDown;
-
-        if (isTapped) {
-          newFaceDown = !isFaceDown;
-          newTapped = false;
-        }
-
-        cardEl.setAttribute('data-tapped', newTapped);
-        cardEl.setAttribute('data-facedown', newFaceDown);
-
-        const cardData = {
-          id: cardEl.id,
-          card: cardEl.cardDataObj,
-          ownerIndex: parseInt(cardEl.getAttribute('data-owner')),
-          x: parseFloat(cardEl.style.left),
-          y: parseFloat(cardEl.style.top),
-          faceDown: newFaceDown,
-          tapped: newTapped,
-          slotOwnerIndex: cardEl.getAttribute('data-slot-owner') !== '' ? parseInt(cardEl.getAttribute('data-slot-owner')) : null,
-          slotIndex: cardEl.getAttribute('data-slot-idx') !== '' ? parseInt(cardEl.getAttribute('data-slot-idx')) : null,
-          zIndex: parseInt(cardEl.style.zIndex) || 10
-        };
-
-        broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
-        updatePlacedCardDOM(cardEl, cardData);
+        broadcast({ type: 'CHANGE_CARD_OWNER', payload: { id: cardEl.id, ownerIndex: myPlayerIndex } });
+        changeCardOwnerLocal({ id: cardEl.id, ownerIndex: myPlayerIndex });
       };
     }
 
@@ -1640,7 +1661,6 @@
       if (!currentRevealedLifeCard) return;
       document.getElementById('life-reveal-modal').style.display = 'none';
 
-      const table = document.getElementById('zone-table');
       const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
       const cardData = {
         id: newCardId,
@@ -1659,11 +1679,22 @@
       syncBoardCardLocal(cardData);
     }
 
+    /* デッキ0枚時のリフレッシュと、墓地0枚時の警告動作 */
     function refreshDeck() {
-      if (deckCards.length > 0) return;
+      if (graveyards[myPlayerIndex].length === 0) {
+        return alert('墓地がありません');
+      }
       deckCards = [...graveyards[myPlayerIndex]];
       graveyards[myPlayerIndex] = [];
       shuffle(deckCards);
+
+      // リフレッシュ時、デッキから3枚カードを引く
+      for (let i = 0; i < 3; i++) {
+        if (deckCards.length > 0) {
+          addCardToHand(deckCards.pop());
+        }
+      }
+
       updateDeckStatus();
       broadcastGraveyard(myPlayerIndex);
       broadcastPlayerState();
@@ -1678,6 +1709,7 @@
       broadcastPlayerState();
     }
 
+    /* マナゾーンのカードも一度クリックすることで横向き（タップ）/縦向きに切り替え */
     function renderManaZone() {
       const manaZone = document.getElementById('mana-zone');
       manaZone.querySelectorAll('.mana-card').forEach(m => m.remove());
@@ -1692,13 +1724,11 @@
         mEl.style.left = `${10 + idx * 46}px`;
         mEl.style.top = `24px`;
 
-        mEl.onclick = () => {
-          m.tapped = !m.tapped;
-          renderManaZone();
-        };
-
         let isDragging = false, startX, startY;
+        let clickStartTime = 0;
+
         mEl.onmousedown = (e) => {
+          clickStartTime = Date.now();
           isDragging = true;
           startX = e.clientX;
           startY = e.clientY;
@@ -1714,6 +1744,16 @@
             isDragging = false;
             window.removeEventListener('mousemove', onMM);
             window.removeEventListener('mouseup', onMU);
+
+            const duration = Date.now() - clickStartTime;
+            const dist = Math.hypot(me.clientX - startX, me.clientY - startY);
+
+            // 一度クリックで横向き・縦向きのトグル
+            if (duration < 200 && dist < 5) {
+              m.tapped = !m.tapped;
+              renderManaZone();
+              return;
+            }
 
             const zRect = manaZone.getBoundingClientRect();
             if (me.clientX < zRect.left || me.clientX > zRect.right || me.clientY < zRect.top || me.clientY > zRect.bottom) {
@@ -1757,17 +1797,44 @@
       renderGraveyardList();
     }
 
+    /* 墓地一覧からカードをドラッグして共有プレイエリアへ移動可能にする */
     function renderGraveyardList() {
       document.getElementById('gy-count').innerText = graveyards[myPlayerIndex].length;
       const container = document.getElementById('graveyard-list');
       container.innerHTML = '';
 
       const targetGy = graveyards[currentGyTab] || [];
-      targetGy.forEach(card => {
+      targetGy.forEach((card, idx) => {
         const cEl = createCardElement(card);
         cEl.style.height = '125px';
         const img = cEl.querySelector('img');
         if (img) img.style.objectFit = 'contain';
+
+        cEl.onmousedown = (e) => {
+          if (e.button !== 0) return;
+          const table = document.getElementById('zone-table');
+          const tableRect = table.getBoundingClientRect();
+          
+          targetGy.splice(idx, 1);
+          broadcastGraveyard(currentGyTab);
+
+          const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+          const cardData = {
+            id: newCardId, card: card, ownerIndex: myPlayerIndex,
+            x: e.clientX - tableRect.left - 30,
+            y: e.clientY - tableRect.top - 42,
+            faceDown: false, tapped: false, slotOwnerIndex: null, slotIndex: null
+          };
+
+          broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
+          syncBoardCardLocal(cardData);
+
+          const placedEl = document.getElementById(newCardId);
+          if (placedEl) {
+            placedEl.dispatchEvent(new MouseEvent('mousedown', { clientX: e.clientX, clientY: e.clientY, bubbles: true }));
+          }
+        };
+
         container.appendChild(cEl);
       });
     }
@@ -1782,6 +1849,7 @@
       }
     }
 
+    /* デッキ検索からカードをドラッグして共有プレイエリアに出せるように修正 */
     function renderDeckSearchList() {
       const container = document.getElementById('deck-search-list');
       container.innerHTML = '';
@@ -1790,18 +1858,40 @@
       shuffle(searchList);
 
       searchList.forEach(card => {
-        const cEl = createCardElement(card, () => {
-          const idx = deckCards.findIndex(c => c.id === card.id);
-          if (idx !== -1) {
-            const picked = deckCards.splice(idx, 1)[0];
-            addCardToHand(picked);
-            updateDeckStatus();
-            renderDeckSearchList();
-          }
-        });
+        const cEl = createCardElement(card);
         cEl.style.height = '125px';
         const img = cEl.querySelector('img');
         if (img) img.style.objectFit = 'contain';
+
+        cEl.onmousedown = (e) => {
+          if (e.button !== 0) return;
+          const idx = deckCards.findIndex(c => c.id === card.id);
+          if (idx !== -1) {
+            const picked = deckCards.splice(idx, 1)[0];
+            updateDeckStatus();
+
+            const table = document.getElementById('zone-table');
+            const tableRect = table.getBoundingClientRect();
+
+            const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            const cardData = {
+              id: newCardId, card: picked, ownerIndex: myPlayerIndex,
+              x: e.clientX - tableRect.left - 30,
+              y: e.clientY - tableRect.top - 42,
+              faceDown: false, tapped: false, slotOwnerIndex: null, slotIndex: null
+            };
+
+            broadcast({ type: 'SYNC_BOARD_CARD', payload: cardData });
+            syncBoardCardLocal(cardData);
+
+            const placedEl = document.getElementById(newCardId);
+            if (placedEl) {
+              placedEl.dispatchEvent(new MouseEvent('mousedown', { clientX: e.clientX, clientY: e.clientY, bubbles: true }));
+            }
+            renderDeckSearchList();
+          }
+        };
+
         container.appendChild(cEl);
       });
     }
