@@ -221,8 +221,9 @@
     }
     .btn-untap-all:hover { background: #7dd3fc; }
 
+    /* 手札・対戦中のカードサイズを小さく変更 */
     .dummy-card {
-      width: 4vw; height: 10vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
+      width: 3.4vw; height: 8.5vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
       box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
     }
@@ -276,9 +277,9 @@
     #deck-search-panel { border: 0.2vh solid #0ea5e9; height: 35%; display: none; }
     #graveyard-tray { border: 0.2vh solid #8b5cf6; flex: 1; }
 
-    /* カード固定枠（スロット）の大きさ変更：重ならないよう幅・高さを小さく調整 */
+    /* カード固定枠（スロット）の大きさ変更：カードサイズに合わせて縮小 */
     .lock-slot-container {
-      position: absolute; width: 38vw; height: 26vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
+      position: absolute; width: 33vw; height: 22vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
       background: rgba(30, 41, 59, 0.4); display: grid; grid-template-columns: repeat(7, 1fr);
       grid-template-rows: repeat(2, 1fr); gap: 0.4vw; padding: 0.6vh; z-index: 2; pointer-events: auto;
     }
@@ -1336,7 +1337,7 @@
       return closestSlot;
     }
 
-    /* 固定枠スロット内のカード位置計算（ズレ防止修正） */
+    /* 固定枠スロット内のカード位置計算（マスの完全中央へ配置されるよう修正） */
     function getSlotPosition(slotOwnerIndex, slotIndex, cardId) {
       const table = document.getElementById('zone-table');
       const tableRect = table.getBoundingClientRect();
@@ -1357,12 +1358,12 @@
       const offset = stackIndex * 8;
       const slotRect = targetSlot.getBoundingClientRect();
 
-      // スロット要素の完全に中心へカードを配置（余計なずれるオフセットを排除）
+      let targetCard = document.getElementById(cardId);
+      let cardWidth = targetCard ? targetCard.offsetWidth : tableRect.width * 0.034;
+      let cardHeight = targetCard ? targetCard.offsetHeight : tableRect.height * 0.085;
+
       const slotCenterX = slotRect.left + slotRect.width / 2 - tableRect.left;
       const slotCenterY = slotRect.top + slotRect.height / 2 - tableRect.top;
-
-      const cardWidth = tableRect.width * 0.04;
-      const cardHeight = tableRect.height * 0.1;
 
       return {
         x: slotCenterX - (cardWidth / 2) - offset,
@@ -1508,8 +1509,8 @@
       const tableRect = table.getBoundingClientRect();
       
       const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-      const startX = e.clientX - tableRect.left - (tableRect.width * 0.02);
-      const startY = e.clientY - tableRect.top - (tableRect.height * 0.05);
+      const startX = e.clientX - tableRect.left - (tableRect.width * 0.017);
+      const startY = e.clientY - tableRect.top - (tableRect.height * 0.0425);
 
       const faceDownMode = forceFaceDown || (e.button === 2);
 
@@ -1569,7 +1570,7 @@
       if (data.tapped) cardEl.classList.add('card-tapped');
 
       if (data.faceDown) {
-        cardEl.innerHTML = `<div style="font-size:1.2vh; color:#64748b; margin-top:3vh;">裏面</div>`;
+        cardEl.innerHTML = `<div style="font-size:1.2vh; color:#64748b; margin-top:2.5vh;">裏面</div>`;
       } else {
         cardEl.innerHTML = `<img src="${data.card.img}" alt="card">`;
       }
@@ -1828,8 +1829,8 @@
 
       const table = document.getElementById('zone-table');
       const tableRect = table.getBoundingClientRect();
-      const centerX = tableRect.width / 2 - (tableRect.width * 0.02);
-      const centerY = tableRect.height / 2 - (tableRect.height * 0.05);
+      const centerX = tableRect.width / 2 - (tableRect.width * 0.017);
+      const centerY = tableRect.height / 2 - (tableRect.height * 0.0425);
 
       const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
       const cardData = {
@@ -1877,8 +1878,8 @@
 
         const table = document.getElementById('zone-table');
         const tableRect = table.getBoundingClientRect();
-        const posX = e.clientX - tableRect.left - (tableRect.width * 0.02);
-        const posY = e.clientY - tableRect.top - (tableRect.height * 0.05);
+        const posX = e.clientX - tableRect.left - (tableRect.width * 0.017);
+        const posY = e.clientY - tableRect.top - (tableRect.height * 0.0425);
 
         const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
         const cardData = {
