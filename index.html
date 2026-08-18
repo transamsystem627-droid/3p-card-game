@@ -2,190 +2,205 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>トリニティドラフト ＆ 対戦モード統合版</title>
   <!-- PeerJS の読み込み -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      width: 100%;
-      height: 100vh;
-      height: 100dvh;
+    
+    /* 画面全体で16:9コンテナを中央配置する背景 */
+    body {
       font-family: sans-serif;
-      background: #0f172a;
+      background: #020617;
       color: #fff;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* どんなディスプレイでも16:9の割合を崩さないルートコンテナ */
+    #app-wrapper {
+      position: relative;
+      width: min(100vw, calc(100vh * 16 / 9));
+      height: min(100vh, calc(100vw * 9 / 16));
+      aspect-ratio: 16 / 9;
+      background: #0f172a;
       display: flex;
       flex-direction: column;
-      padding: 8px;
-      position: relative;
+      padding: 0.8vh 0.8vw;
       overflow: hidden;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
     }
 
     /* ロビー画面 */
     #lobby-view {
-      position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: #0f172a; z-index: 10000; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; padding: 20px;
+      align-items: center; justify-content: center; padding: 2vh 2vw;
     }
     .lobby-card {
-      background: #1e293b; border: 2px solid #6366f1; border-radius: 12px;
-      padding: 24px; width: 90%; max-width: 480px; text-align: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background: #1e293b; border: 0.2vh solid #6366f1; border-radius: 1vh;
+      padding: 3vh 2vw; width: 100%; max-width: 40vw; text-align: center;
+      box-shadow: 0 1vh 3vh rgba(0,0,0,0.5);
     }
-    .lobby-title { font-size: clamp(18px, 2.5vw, 22px); font-weight: bold; color: #38bdf8; margin-bottom: 20px; }
-    .input-group { margin: 15px 0; display: flex; gap: 8px; justify-content: center; }
+    .lobby-title { font-size: 2.2vh; font-weight: bold; color: #38bdf8; margin-bottom: 2vh; }
+    .input-group { margin: 1.5vh 0; display: flex; gap: 0.8vw; justify-content: center; }
     input[type="text"] {
-      padding: 10px; width: 65%; border-radius: 6px; border: 1px solid #475569;
-      background: #0f172a; color: #fff; font-size: 14px;
+      padding: 1vh 0.8vw; width: 65%; border-radius: 0.6vh; border: 0.1vh solid #475569;
+      background: #0f172a; color: #fff; font-size: 1.4vh;
     }
     .btn-primary {
-      padding: 10px 18px; border: none; border-radius: 6px; background: #6366f1;
-      color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s;
+      padding: 1vh 1.5vw; border: none; border-radius: 0.6vh; background: #6366f1;
+      color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 1.4vh;
     }
     .btn-primary:hover { background: #4f46e5; }
     .btn-primary:disabled { background: #475569; cursor: not-allowed; }
     
     .btn-copy {
-      padding: 4px 10px; border: none; border-radius: 4px; background: #38bdf8;
-      color: #0f172a; font-size: 11px; font-weight: bold; cursor: pointer;
-      transition: 0.2s; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px;
+      padding: 0.4vh 0.8vw; border: none; border-radius: 0.4vh; background: #38bdf8;
+      color: #0f172a; font-size: 1.1vh; font-weight: bold; cursor: pointer;
+      transition: 0.2s; margin-left: 0.5vw; display: inline-flex; align-items: center; gap: 0.4vw;
     }
     .btn-copy:hover { background: #7dd3fc; }
 
-    .lobby-status { margin-top: 15px; font-size: 13px; color: #94a3b8; }
+    .lobby-status { margin-top: 1.5vh; font-size: 1.3vh; color: #94a3b8; }
 
     /* Header Styles */
     #header-bar {
-      background: #1e293b; border: 2px solid #6366f1; border-radius: 8px;
-      padding: 6px 12px; display: flex; justify-content: space-between;
-      align-items: center; margin-bottom: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); flex-shrink: 0;
+      background: #1e293b; border: 0.2vh solid #6366f1; border-radius: 0.8vh;
+      padding: 0.8vh 1.2vw; display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 0.8vh; box-shadow: 0 0.4vh 1.2vh rgba(0,0,0,0.3); flex-shrink: 0;
+      height: 6vh;
     }
-    .status-title { font-size: clamp(14px, 1.5vw, 16px); font-weight: bold; color: #38bdf8; }
-    .status-info { font-size: clamp(11px, 1.2vw, 13px); color: #cbd5e1; display: flex; gap: 10px; }
-    .status-badge { background: #334155; padding: 3px 6px; border-radius: 4px; border: 1px solid #475569; }
+    .status-title { font-size: 1.8vh; font-weight: bold; color: #38bdf8; }
+    .status-info { font-size: 1.4vh; color: #cbd5e1; display: flex; gap: 1.2vw; }
+    .status-badge { background: #334155; padding: 0.4vh 0.8vw; border-radius: 0.4vh; border: 0.1vh solid #475569; }
 
-    .view-stage { display: flex; gap: 10px; flex: 1; min-height: 0; height: calc(100% - 40px); }
+    .view-stage { display: flex; gap: 0.8vw; flex: 1; min-height: 0; }
 
     /* Draft View */
     #pack-section {
-      flex: 3; background: #1e293b; border: 1px solid #334155; border-radius: 8px;
-      padding: 10px; display: flex; flex-direction: column; min-height: 0;
+      flex: 3; background: #1e293b; border: 0.1vh solid #334155; border-radius: 0.8vh;
+      padding: 1.2vh; display: flex; flex-direction: column; min-height: 0;
     }
-    .section-title { font-size: 12px; color: #94a3b8; margin-bottom: 6px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+    .section-title { font-size: 1.4vh; color: #94a3b8; margin-bottom: 0.6vh; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
     #pack-cards {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-      gap: 6px; flex: 1; overflow-y: auto; padding: 4px; align-content: start;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(6vw, 1fr));
+      gap: 0.6vw; flex: 1; overflow-y: auto; padding: 0.4vh;
     }
 
-    #sidebar-section { flex: 1.2; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
-    .panel-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; min-height: 0; }
-    .player-status-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
-    .player-status-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
-    .ready-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    #sidebar-section { flex: 1.2; display: flex; flex-direction: column; gap: 0.8vh; min-height: 0; }
+    .panel-box { background: #1e293b; border: 0.1vh solid #334155; border-radius: 0.8vh; padding: 1vh; display: flex; flex-direction: column; min-height: 0; }
+    .player-status-list { display: flex; flex-direction: column; gap: 0.4vh; margin-top: 0.4vh; }
+    .player-status-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 0.4vh 0.6vw; border-radius: 0.4vh; font-size: 1.2vh; }
+    .ready-tag { font-size: 1.1vh; padding: 0.2vh 0.5vw; border-radius: 0.4vh; font-weight: bold; }
     .tag-waiting { background: #475569; color: #94a3b8; }
     .tag-ready { background: #10b981; color: #fff; }
 
     #picked-cards-container { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     #picked-cards {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
-      gap: 4px; flex: 1; overflow-y: auto; padding: 4px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; align-content: start;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(4.5vw, 1fr));
+      gap: 0.4vw; flex: 1; overflow-y: auto; padding: 0.4vh; background: #0f172a; border: 0.1vh solid #334155; border-radius: 0.6vh;
     }
 
     /* Deck Builder View */
-    #deck-builder-view { display: none; width: 100%; height: calc(100% - 40px); }
-    #pool-section { flex: 1.2; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; min-height: 0; }
+    #deck-builder-view { display: none; width: 100%; height: 100%; }
+    #pool-section { flex: 1.2; background: #1e293b; border: 0.1vh solid #334155; border-radius: 0.8vh; padding: 1vh; display: flex; flex-direction: column; min-height: 0; }
     #pool-cards {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); grid-auto-rows: max-content;
-      gap: 6px; flex: 1; overflow-y: auto; background: #0f172a; padding: 6px; border-radius: 6px; border: 1px solid #334155; align-content: start;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(5vw, 1fr)); grid-auto-rows: max-content;
+      gap: 0.4vw; flex: 1; overflow-y: auto; background: #0f172a; padding: 0.6vh; border-radius: 0.6vh; border: 0.1vh solid #334155; align-content: start;
     }
 
-    #decks-section { flex: 2; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+    #decks-section { flex: 2; display: flex; flex-direction: column; gap: 0.8vh; min-height: 0; }
     .deck-drop-zone {
-      flex: 1; background: #1e293b; border: 2px dashed #475569; border-radius: 8px; padding: 8px;
+      flex: 1; background: #1e293b; border: 0.2vh dashed #475569; border-radius: 0.8vh; padding: 0.8vh;
       display: flex; flex-direction: column; min-height: 0; transition: border-color 0.2s, background 0.2s;
     }
     .deck-drop-zone.drag-over { border-color: #38bdf8; background: #334155; }
     .deck-card-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); grid-auto-rows: max-content;
-      gap: 6px; flex: 1; overflow-y: auto; background: #0f172a; padding: 6px; border-radius: 6px; align-content: start;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(5vw, 1fr)); grid-auto-rows: max-content;
+      gap: 0.4vw; flex: 1; overflow-y: auto; background: #0f172a; padding: 0.6vh; border-radius: 0.6vh; align-content: start;
     }
 
-    #special-card-section { flex: 1; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; min-height: 0; }
-    #special-card-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 4px; overflow-y: auto; }
+    #special-card-section { flex: 1; background: #1e293b; border: 0.1vh solid #334155; border-radius: 0.8vh; padding: 1vh; display: flex; flex-direction: column; min-height: 0; }
+    #special-card-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6vw; margin-top: 0.6vh; }
 
     /* Card Items UI - 画像のみ表示 */
     .card-item {
-      width: 100%; height: clamp(75px, 10vh, 105px); background: #1e293b; border: 2px solid #64748b;
-      border-radius: 6px; cursor: grab; user-select: none; transition: border-color 0.15s, transform 0.15s;
+      width: 100%; aspect-ratio: 2 / 3; background: #1e293b; border: 0.2vh solid #64748b;
+      border-radius: 0.6vh; cursor: grab; user-select: none; transition: border-color 0.15s, transform 0.15s;
       overflow: hidden; display: flex; align-items: center; justify-content: center;
     }
     .card-item:active { cursor: grabbing; }
-    .card-item:hover { border-color: #38bdf8; transform: translateY(-2px); }
-    .card-item.selected { border-color: #f59e0b !important; box-shadow: 0 0 10px #f59e0b; }
-    .card-img-thumb { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+    .card-item:hover { border-color: #38bdf8; transform: translateY(-0.2vh); }
+    .card-item.selected { border-color: #f59e0b !important; box-shadow: 0 0 1vh #f59e0b; }
+    .card-img-thumb { width: 100%; height: 100%; object-fit: cover; border-radius: 0.4vh; }
 
     .special-card-item {
-      height: clamp(80px, 11vh, 110px); background: #1e1b4b; border: 2px solid #a855f7; border-radius: 6px;
+      height: 12vh; background: #1e1b4b; border: 0.2vh solid #a855f7; border-radius: 0.6vh;
       cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center;
     }
     .special-card-item img { object-fit: contain; }
-    .special-card-item.active { border-color: #f59e0b !important; box-shadow: 0 0 12px rgba(245, 158, 11, 0.8); }
+    .special-card-item.active { border-color: #f59e0b !important; box-shadow: 0 0 1.2vh rgba(245, 158, 11, 0.8); }
 
     .action-btn {
-      width: 100%; padding: 8px; background: #10b981; color: white; border: none; border-radius: 6px;
-      font-size: 13px; font-weight: bold; cursor: pointer; margin-top: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); flex-shrink: 0;
+      width: 100%; padding: 1vh; background: #10b981; color: white; border: none; border-radius: 0.6vh;
+      font-size: 1.5vh; font-weight: bold; cursor: pointer; margin-top: 0.6vh; box-shadow: 0 0.4vh 0.6vh rgba(0,0,0,0.3);
     }
     .action-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; }
 
     #pass-notice {
-      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: rgba(15, 23, 42, 0.95); border: 2px solid #38bdf8; border-radius: 12px;
-      padding: 20px 32px; text-align: center; font-size: 18px; font-weight: bold; color: #38bdf8; display: none; z-index: 1000;
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(15, 23, 42, 0.95); border: 0.2vh solid #38bdf8; border-radius: 1.2vh;
+      padding: 2vh 2vw; text-align: center; font-size: 2vh; font-weight: bold; color: #38bdf8; display: none; z-index: 1000;
     }
 
     #hover-preview-card {
-      position: fixed; width: clamp(260px, 22vw, 380px); height: clamp(360px, 31vw, 530px); background: #020617;
-      border: 3px solid #38bdf8; border-radius: 12px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
-      display: none; pointer-events: none; z-index: 300000; padding: 6px; overflow: hidden;
+      position: absolute; width: 20vw; height: 50vh; background: #020617;
+      border: 0.3vh solid #38bdf8; border-radius: 1.2vh; box-shadow: 0 2vh 5vh rgba(0, 0, 0, 0.9);
+      display: none; pointer-events: none; z-index: 300000; padding: 0.6vh; overflow: hidden;
     }
-    #hover-preview-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+    #hover-preview-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 0.8vh; }
     
     .preview-dummy-card {
-      width: 100%; height: 100%; background: #0f172a; border: 2px dashed #475569;
-      border-radius: 8px; display: flex; align-items: center; justify-content: center;
-      font-size: 80px; font-weight: bold; color: #64748b; user-select: none;
+      width: 100%; height: 100%; background: #0f172a; border: 0.2vh dashed #475569;
+      border-radius: 0.8vh; display: flex; align-items: center; justify-content: center;
+      font-size: 10vh; font-weight: bold; color: #64748b; user-select: none;
     }
 
     /* Battle View */
-    #battle-view { display: none; height: 100%; flex-direction: column; overflow: hidden; position: relative; }
-    #play-field { display: flex; flex-direction: column; gap: 6px; height: 100%; width: calc(100% - clamp(180px, 15vw, 220px)); }
+    #battle-view { display: none; height: 100%; flex-direction: column; width: 100%; }
+    #play-field { display: flex; flex-direction: column; gap: 0.8vh; height: 100%; width: 100%; padding-right: 15vw; }
 
     #score-bar {
       display: flex; justify-content: space-around; align-items: center; background: #020617;
-      border: 2px solid #6366f1; border-radius: 8px; padding: 4px 12px; box-shadow: 0 0 12px rgba(99, 102, 241, 0.3); flex-shrink: 0;
+      border: 0.2vh solid #6366f1; border-radius: 0.8vh; padding: 0.6vh 1vw; box-shadow: 0 0 1.2vh rgba(99, 102, 241, 0.3);
+      height: 5vh;
     }
-    .score-group { display: flex; align-items: center; gap: 6px; font-size: 11px; }
-    .score-p-title { font-weight: bold; font-size: 11px; }
+    .score-group { display: flex; align-items: center; gap: 0.6vw; font-size: 1.3vh; }
+    .score-p-title { font-weight: bold; font-size: 1.4vh; }
     .score-p1-title { color: #818cf8; }
     .score-p2-title { color: #38bdf8; }
     .score-p3-title { color: #f43f5e; }
-    .score-box { display: flex; align-items: center; gap: 3px; background: #1e293b; padding: 2px 5px; border-radius: 4px; border: 1px solid #475569; }
-    .score-label { color: #94a3b8; font-size: 9px; }
-    .score-val { font-size: 11px; font-weight: bold; color: #38bdf8; }
+    .score-box { display: flex; align-items: center; gap: 0.3vw; background: #1e293b; padding: 0.2vh 0.5vw; border-radius: 0.4vh; border: 0.1vh solid #475569; }
+    .score-label { color: #94a3b8; font-size: 1.1vh; }
+    .score-val { font-size: 1.4vh; font-weight: bold; color: #38bdf8; }
 
-    #main-board { display: grid; grid-template-columns: minmax(130px, 160px) 1fr; gap: 6px; flex: 1; min-height: 0; }
-    .zone { border: 2px dashed #475569; border-radius: 8px; padding: 4px; background: #0f172a; position: relative; }
-    .zone-title { font-size: 10px; color: #94a3b8; text-align: center; }
+    #main-board { display: grid; grid-template-columns: 11vw 1fr; gap: 0.6vw; flex: 1; min-height: 0; }
+    .zone { border: 0.2vh dashed #475569; border-radius: 0.8vh; padding: 0.6vh; background: #0f172a; position: relative; }
+    .zone-title { font-size: 1.2vh; color: #94a3b8; text-align: center; }
 
-    button.game-btn { padding: 6px 4px; background: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; }
+    button.game-btn { padding: 0.6vh 0.4vw; background: #4f46e5; color: white; border: none; border-radius: 0.4vh; cursor: pointer; font-size: 1.2vh; font-weight: bold; }
     button.game-btn:hover { background: #6366f1; }
-    #refresh-btn { background: #10b981; margin-top: 4px; width: 100%; display: none; }
+    #refresh-btn { background: #10b981; margin-top: 0.4vh; width: 100%; display: none; }
     #refresh-btn:hover { background: #059669; }
 
-    #mana-zone { border-color: #3b82f6; background: #091e3a; height: 65px; position: relative; overflow: hidden; display: flex; align-items: center; padding-right: 100px; flex-shrink: 0; }
-    .mana-btn { padding: 2px 4px; font-size: 9px; border-radius: 3px; border: none; color: white; cursor: pointer; }
-    .mana-card { width: 36px; height: 50px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; cursor: grab; user-select: none; position: absolute; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 5; transition: transform 0.15s; }
+    #mana-zone { border-color: #3b82f6; background: #091e3a; height: 10vh; position: relative; overflow: hidden; display: flex; align-items: center; padding-right: 8vw; }
+    .mana-btn { padding: 0.2vh 0.4vw; font-size: 1.1vh; border-radius: 0.3vh; border: none; color: white; cursor: pointer; }
+    .mana-card { width: 2.8vw; height: 7vh; border-radius: 0.4vh; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2vh; font-weight: bold; cursor: grab; user-select: none; position: absolute; box-shadow: 0 0.2vh 0.5vh rgba(0,0,0,0.5); z-index: 5; transition: transform 0.15s; }
     .mana-card:active { cursor: grabbing; }
     .mana-red { background: #ef4444; color: #fff; }
     .mana-yellow { background: #eab308; color: #000; }
@@ -194,16 +209,16 @@
     .mana-card.tapped { transform: rotate(90deg); }
 
     .btn-untap-all {
-      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-      padding: 4px 8px; background: #38bdf8; color: #0f172a; font-weight: bold;
-      font-size: 10px; border: none; border-radius: 4px; cursor: pointer; z-index: 10;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4); transition: 0.2s;
+      position: absolute; right: 0.5vw; top: 50%; transform: translateY(-50%);
+      padding: 0.6vh 0.6vw; background: #38bdf8; color: #0f172a; font-weight: bold;
+      font-size: 1.1vh; border: none; border-radius: 0.4vh; cursor: pointer; z-index: 10;
+      box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); transition: 0.2s;
     }
     .btn-untap-all:hover { background: #7dd3fc; }
 
     .dummy-card {
-      width: clamp(45px, 4.5vw, 56px); height: clamp(63px, 6.3vw, 78px); background: #1e293b; border: 2px solid #94a3b8; border-radius: 4px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
+      width: 4vw; height: 10vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
+      box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
     }
     .dummy-card img { width: 100%; height: 100%; object-fit: cover; }
@@ -222,12 +237,12 @@
 
     .left-action-zone { 
       width: 100%; 
-      padding: 6px 2px; 
-      min-height: 32px;
-      border: 1px dashed #475569; 
-      border-radius: 6px; 
+      padding: 0.8vh 0.2vw; 
+      min-height: 4vh;
+      border: 0.1vh dashed #475569; 
+      border-radius: 0.6vh; 
       text-align: center; 
-      font-size: 10px; 
+      font-size: 1.1vh; 
       display: flex;
       align-items: center;
       justify-content: center;
@@ -237,102 +252,99 @@
     #deck-bottom-zone { border-color: #f59e0b; background: #451a03; color: #fde68a; }
     #graveyard-zone { border-color: #8b5cf6; background: #2e1065; color: #ddd6fe; cursor: pointer; }
 
-    #bottom-hand-panel { height: clamp(110px, 16vh, 135px); background: #0f172a; border: 2px dashed #10b981; border-radius: 8px; padding: 4px; display: flex; flex-direction: column; flex-shrink: 0; }
-    #hand-cards { display: flex; gap: 6px; overflow-x: auto; flex: 1; align-items: center; padding-top: 2px; }
-    .hand-card-wrapper { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    #bottom-hand-panel { height: 16vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.6vh; display: flex; flex-direction: column; }
+    #hand-cards { display: flex; gap: 0.5vw; overflow-x: auto; flex: 1; align-items: center; padding-top: 0.2vh; }
+    .hand-card-wrapper { display: flex; flex-direction: column; align-items: center; gap: 0.4vh; }
     
     .btn-facedown {
-      padding: 1px 4px; font-size: 8px; border: 1px solid #475569; background: #1e293b;
-      color: #cbd5e1; border-radius: 3px; cursor: grab; user-select: none; transition: 0.15s;
+      padding: 0.2vh 0.4vw; font-size: 1vh; border: 0.1vh solid #475569; background: #1e293b;
+      color: #cbd5e1; border-radius: 0.4vh; cursor: grab; user-select: none; transition: 0.15s;
     }
     .btn-facedown:hover { background: #334155; color: #38bdf8; border-color: #38bdf8; }
     .btn-facedown:active { cursor: grabbing; }
 
-    #side-container { 
-      position: absolute; right: 0; top: 0; 
-      width: clamp(170px, 14vw, 210px); height: 100%; 
-      display: flex; flex-direction: column; gap: 6px; z-index: 200; pointer-events: none; 
-    }
-    .tray-panel { background: rgba(15, 23, 42, 0.95); border-radius: 8px; padding: 6px; display: flex; flex-direction: column; pointer-events: auto; }
-    .tray-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; overflow-y: auto; flex: 1; padding-right: 2px; }
+    #side-container { position: absolute; right: 0.8vw; top: 1vh; width: 14vw; height: 96vh; display: flex; flex-direction: column; gap: 0.8vh; z-index: 200; pointer-events: none; }
+    .tray-panel { background: rgba(15, 23, 42, 0.95); border-radius: 0.8vh; padding: 0.8vh; display: flex; flex-direction: column; pointer-events: auto; }
+    .tray-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.4vw; overflow-y: auto; flex: 1; padding-right: 0.2vw; }
     .tray-list .card-img-thumb { object-fit: contain; }
 
-    #deck-search-panel { border: 2px solid #0ea5e9; height: 40%; display: none; }
-    #graveyard-tray { border: 2px solid #8b5cf6; flex: 1; min-height: 0; }
+    #deck-search-panel { border: 0.2vh solid #0ea5e9; height: 35%; display: none; }
+    #graveyard-tray { border: 0.2vh solid #8b5cf6; flex: 1; }
 
     .lock-slot-container {
-      position: absolute; width: clamp(380px, 42vw, 520px); height: clamp(160px, 20vh, 220px); border: 2px dashed #6366f1; border-radius: 8px;
+      position: absolute; width: 36vw; height: 28vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
       background: rgba(30, 41, 59, 0.4); display: grid; grid-template-columns: repeat(7, 1fr);
-      grid-template-rows: repeat(2, 1fr); gap: 4px; padding: 6px; z-index: 2; pointer-events: auto;
+      grid-template-rows: repeat(2, 1fr); gap: 0.4vw; padding: 0.6vh; z-index: 2; pointer-events: auto;
     }
     .lock-slot {
-      width: 100%; height: 100%; border: 1px dashed #475569; border-radius: 4px;
-      display: flex; align-items: center; justify-content: center; font-size: 9px; color: #64748b; text-align: center;
+      width: 100%; height: 100%; border: 0.1vh dashed #475569; border-radius: 0.6vh;
+      display: flex; align-items: center; justify-content: center; font-size: 1.1vh; color: #64748b; text-align: center;
       background: rgba(15, 23, 42, 0.3); transition: border-color 0.15s;
     }
     
-    #p1-lock-zone { bottom: 6px; left: 50%; transform: translateX(-50%); }
-    #p2-lock-zone { top: 40px; left: 1%; transform: rotate(160deg); transform-origin: center center; }
-    #p3-lock-zone { top: 40px; right: 1%; transform: rotate(-160deg); transform-origin: center center; }
+    #p1-lock-zone { bottom: 1vh; left: 50%; transform: translateX(-50%); }
+    #p2-lock-zone { top: 6vh; left: 2%; transform: rotate(160deg); transform-origin: center center; }
+    #p3-lock-zone { top: 6vh; right: 2%; transform: rotate(-160deg); transform-origin: center center; }
 
     .opponent-overlay-info {
-      position: absolute; top: 4px; background: rgba(15, 23, 42, 0.85);
-      border: 1px solid #334155; border-radius: 6px; padding: 4px 8px;
-      font-size: 10px; z-index: 30; pointer-events: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      position: absolute; top: 0.8vh; background: rgba(15, 23, 42, 0.85);
+      border: 0.1vh solid #334155; border-radius: 0.6vh; padding: 0.6vh 0.8vw;
+      font-size: 1.2vh; z-index: 30; pointer-events: none; box-shadow: 0 0.4vh 1vh rgba(0,0,0,0.5);
     }
-    #p2-overlay-info { left: 6px; border-left: 3px solid #38bdf8; }
-    #p3-overlay-info { right: 6px; border-right: 3px solid #f43f5e; }
+    #p2-overlay-info { left: 0.8vw; border-left: 0.3vw solid #38bdf8; }
+    #p3-overlay-info { right: 0.8vw; border-right: 0.3vw solid #f43f5e; }
 
     .bar-track-container {
       position: absolute; background: rgba(15, 23, 42, 0.7);
-      border: 1px solid #334155; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; padding: 4px 8px; z-index: 20;
+      border: 0.1vh solid #334155; border-radius: 1.2vh; display: flex; flex-direction: column; justify-content: center; padding: 0.6vh 0.8vw; z-index: 20;
     }
-    .bar-track-line { position: relative; width: 100%; height: 6px; background: #1e293b; border-radius: 3px; display: flex; justify-content: space-between; align-items: center; }
-    .bar-node { width: 8px; height: 8px; background: #475569; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 21; }
+    .bar-track-line { position: relative; width: 100%; height: 0.6vh; background: #1e293b; border-radius: 0.3vh; display: flex; justify-content: space-between; align-items: center; }
+    .bar-node { width: 0.8vw; height: 0.8vw; max-width: 1.2vh; max-height: 1.2vh; background: #475569; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 21; }
     
     .movable-bar-handle {
       position: absolute; background: linear-gradient(135deg, #f59e0b, #d97706);
-      border: 2px solid #fff; border-radius: 6px; cursor: pointer;
+      border: 0.2vh solid #fff; border-radius: 0.6vh; cursor: pointer;
       transition: left 0.2s ease, top 0.2s ease; z-index: 25;
-      box-shadow: 0 0 12px rgba(245, 158, 11, 0.8);
+      box-shadow: 0 0 1.2vh rgba(245, 158, 11, 0.8);
     }
     
-    #track-top { top: 20px; left: 50%; transform: translateX(-50%); width: clamp(180px, 20vw, 240px); height: 28px; }
-    .bar-track-container .movable-bar-handle { width: 22px; height: 50px; top: calc(50% - 25px); }
+    #track-top { top: 3vh; left: 50%; transform: translateX(-50%); width: 18vw; height: 4vh; }
+    .bar-track-container .movable-bar-handle { width: 1.8vw; height: 8vh; top: calc(50% - 4vh); }
 
-    .bar-vertical { width: 28px; height: clamp(160px, 18vh, 210px); padding: 8px 4px; }
-    .bar-vertical .bar-track-line { width: 6px; height: 100%; flex-direction: column; margin: 0 auto; }
-    .bar-vertical .movable-bar-handle { width: 50px; height: 22px; left: calc(50% - 25px); top: auto; }
+    .bar-vertical { width: 2vw; height: 28vh; padding: 1.2vh 0.4vw; }
+    .bar-vertical .bar-track-line { width: 0.6vh; height: 100%; flex-direction: column; margin: 0 auto; }
+    .bar-vertical .movable-bar-handle { width: 4.5vw; height: 3vh; left: calc(50% - 2.25vw); top: auto; }
 
-    #track-left-p1 { bottom: 15px; left: 18%; transform-origin: center center; transform: rotate(-15deg); }
-    #track-right-p1 { bottom: 15px; right: 18%; transform-origin: center center; transform: rotate(15deg); }
+    #track-left-p1 { bottom: 2vh; left: 20%; transform-origin: center center; transform: rotate(-15deg); }
+    #track-right-p1 { bottom: 2vh; right: 20%; transform-origin: center center; transform: rotate(15deg); }
     .bar-flip { transform: rotate(180deg); }
 
-    .counter-box { margin-top: 4px; padding: 2px; background: #1e1b4b; border: 1px solid #6366f1; border-radius: 6px; text-align: center; }
-    .counter-btn { width: 18px; height: 18px; padding: 0; font-weight: bold; font-size: 10px; border-radius: 3px; background: #4f46e5; color: #fff; border: none; cursor: pointer; }
+    .counter-box { margin-top: 0.4vh; padding: 0.4vh; background: #1e1b4b; border: 0.1vh solid #6366f1; border-radius: 0.6vh; text-align: center; }
+    .counter-btn { width: 1.5vw; height: 1.5vw; max-width: 2.2vh; max-height: 2.2vh; padding: 0; font-weight: bold; font-size: 1.2vh; border-radius: 0.4vh; background: #4f46e5; color: #fff; border: none; cursor: pointer; }
 
-    /* モーダル表示サイズ */
-    #life-reveal-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(6px); }
-    #modal-card { width: clamp(280px, 30vw, 420px); height: clamp(390px, 42vw, 588px); background: #020617; border: 4px solid #38bdf8; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 10px; overflow: hidden; }
-    #modal-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+    /* モーダル表示 */
+    #life-reveal-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(0.6vh); }
+    #modal-card { width: 25vw; height: 65vh; background: #020617; border: 0.4vh solid #38bdf8; border-radius: 1.6vh; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 1vh; overflow: hidden; }
+    #modal-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 0.8vh; }
   </style>
 </head>
 <body>
 
+<div id="app-wrapper">
   <!-- ロビー画面 -->
   <div id="lobby-view">
     <div class="lobby-card">
       <div class="lobby-title">🎮 3人対戦 オンラインロビー</div>
-      <p style="font-size:12px; color:#cbd5e1; display:flex; align-items:center; justify-content:center;">
-        あなたのID: <b id="my-peer-id" style="color:#38bdf8; margin-left:4px;">発行中...</b>
+      <p style="font-size:1.3vh; color:#cbd5e1; display:flex; align-items:center; justify-content:center;">
+        あなたのID: <b id="my-peer-id" style="color:#38bdf8; margin-left:0.4vw;">発行中...</b>
         <button id="btn-copy-id" class="btn-copy" onclick="copyMyId()">コピー</button>
       </p>
       
-      <div style="margin: 20px 0;">
+      <div style="margin: 2vh 0;">
         <button id="btn-create-room" class="btn-primary" onclick="createRoom()" style="width:100%;">ホストとして部屋を作成</button>
       </div>
       
-      <p style="font-size:12px; color:#64748b;">または</p>
+      <p style="font-size:1.3vh; color:#64748b;">または</p>
       
       <div class="input-group">
         <input type="text" id="host-id-input" placeholder="ホストのIDを入力">
@@ -428,25 +440,25 @@
       <div id="score-bar"></div>
 
       <div id="main-board">
-        <div style="display: flex; flex-direction: column; gap: 4px; overflow-y: auto;">
+        <div style="display: flex; flex-direction: column; gap: 0.6vh; overflow-y: auto;">
           <div class="zone">
             <div class="zone-title" id="deck-title">メイン (<span id="deck-count">23</span>)</div>
-            <button class="game-btn" onclick="drawCard()" style="width:100%; margin-top:2px;">1枚引く</button>
-            <button class="game-btn" onclick="revealTopDeckCard()" style="width:100%; margin-top:2px; background:#eab308; color:#000; font-weight:bold;">1枚めくる</button>
-            <button id="refresh-btn" class="game-btn" onclick="refreshDeck()" style="display:block; margin-top:2px;">墓地を戻してリフレッシュ</button>
-            <button class="game-btn" style="width:100%; margin-top:2px;" onclick="toggleDeckSearch()">検索</button>
+            <button class="game-btn" onclick="drawCard()" style="width:100%; margin-top:0.4vh;">1枚引く</button>
+            <button class="game-btn" onclick="revealTopDeckCard()" style="width:100%; margin-top:0.4vh; background:#eab308; color:#000; font-weight:bold;">1枚めくる</button>
+            <button id="refresh-btn" class="game-btn" onclick="refreshDeck()" style="display:block; margin-top:0.4vh;">墓地を戻してリフレッシュ</button>
+            <button class="game-btn" style="width:100%; margin-top:0.4vh;" onclick="toggleDeckSearch()">検索</button>
           </div>
           
-          <div class="zone" style="cursor:pointer; min-height:36px;" onclick="revealLifeCard('left')">
+          <div class="zone" style="cursor:pointer; min-height:5vh;" onclick="revealLifeCard('left')">
             <div class="zone-title">左ライフ (<span id="left-life-count">8</span>)<br><small style="color:#38bdf8;">めくる</small></div>
           </div>
-          <div class="zone" style="cursor:pointer; min-height:36px;" onclick="revealLifeCard('right')">
+          <div class="zone" style="cursor:pointer; min-height:5vh;" onclick="revealLifeCard('right')">
             <div class="zone-title">右ライフ (<span id="right-life-count">8</span>)<br><small style="color:#f43f5e;">めくる</small></div>
           </div>
           
           <div class="zone">
             <div class="zone-title">マナ生成</div>
-            <div style="display:flex; gap:2px; justify-content:center; margin-top:2px;">
+            <div style="display:flex; gap:0.2vw; justify-content:center; margin-top:0.2vh;">
               <button class="mana-btn" style="background:#ef4444;" onclick="spawnMana('red')">赤</button>
               <button class="mana-btn" style="background:#eab308; color:#000;" onclick="spawnMana('yellow')">黄</button>
               <button class="mana-btn" style="background:#3b82f6;" onclick="spawnMana('blue')">青</button>
@@ -454,10 +466,10 @@
             </div>
 
             <div class="counter-box">
-              <div style="font-size:9px; color:#c7d2fe; margin-bottom:2px;">トリニティ</div>
-              <div style="display:flex; gap:6px; align-items:center; justify-content:center;">
+              <div style="font-size:1vh; color:#c7d2fe; margin-bottom:0.2vh;">トリニティ</div>
+              <div style="display:flex; gap:0.6vw; align-items:center; justify-content:center;">
                 <button class="counter-btn" onclick="updateTrinity(-1)">−</button>
-                <span id="counter-num" style="font-size:12px; font-weight:bold; color:#fff;">0</span>
+                <span id="counter-num" style="font-size:1.4vh; font-weight:bold; color:#fff;">0</span>
                 <button class="counter-btn" onclick="updateTrinity(1)">＋</button>
               </div>
             </div>
@@ -469,16 +481,16 @@
           <div class="left-action-zone" id="graveyard-zone"><b>自分の墓地 (<span id="gy-count">0</span>)</b></div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 4px; min-height: 0;">
-          <div class="zone" id="zone-table" style="flex: 1; position:relative; min-height: 0;" ondragover="allowDrop(event)" ondrop="handleTableDrop(event)">
+        <div style="display: flex; flex-direction: column; gap: 0.6vh;">
+          <div class="zone" id="zone-table" style="flex: 1; position:relative;" ondragover="allowDrop(event)" ondrop="handleTableDrop(event)">
             <div id="p2-overlay-info" class="opponent-overlay-info">
-              <div id="p2-overlay-title" style="font-weight:bold; color:#38bdf8; margin-bottom:2px;">プレイヤー 2</div>
+              <div id="p2-overlay-title" style="font-weight:bold; color:#38bdf8; margin-bottom:0.2vh;">プレイヤー 2</div>
               手札: <span id="p2-hand-count-overlay" style="color:#fff; font-weight:bold;">0</span> 枚 | 
               山札: <span id="p2-deck-count-overlay" style="color:#fff; font-weight:bold;">23</span> 枚 | 
               墓地: <span id="p2-gy-count-overlay" style="color:#fff; font-weight:bold;">0</span> 枚
             </div>
             <div id="p3-overlay-info" class="opponent-overlay-info">
-              <div id="p3-overlay-title" style="font-weight:bold; color:#f43f5e; margin-bottom:2px;">プレイヤー 3</div>
+              <div id="p3-overlay-title" style="font-weight:bold; color:#f43f5e; margin-bottom:0.2vh;">プレイヤー 3</div>
               手札: <span id="p3-hand-count-overlay" style="color:#fff; font-weight:bold;">0</span> 枚 | 
               山札: <span id="p3-deck-count-overlay" style="color:#fff; font-weight:bold;">23</span> 枚 | 
               墓地: <span id="p3-gy-count-overlay" style="color:#fff; font-weight:bold;">0</span> 枚
@@ -523,7 +535,7 @@
           </div>
           
           <div class="zone" id="mana-zone">
-            <div class="zone-title" style="margin-right:8px;">自分のマナゾーン<br><small>(枠外ドラッグで削除)</small></div>
+            <div class="zone-title" style="margin-right:1vw;">自分のマナゾーン<br><small>(枠外ドラッグで削除)</small></div>
             <button class="btn-untap-all" onclick="untapAllMana()">すべてのマナを起こす</button>
           </div>
         </div>
@@ -537,19 +549,19 @@
 
     <div id="side-container">
       <div id="deck-search-panel" class="tray-panel">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-          <span style="font-size:10px; color:#38bdf8; font-weight:bold;">デッキ内検索</span>
-          <button class="game-btn" onclick="toggleDeckSearch()" style="padding:0 4px; background:#334155;">✕</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4vh;">
+          <span style="font-size:1.1vh; color:#38bdf8; font-weight:bold;">デッキ内検索 (ランダム表示)</span>
+          <button class="game-btn" onclick="toggleDeckSearch()" style="padding:0 0.4vw; background:#334155;">✕</button>
         </div>
         <div id="deck-search-list" class="tray-list"></div>
       </div>
 
       <div id="graveyard-tray" class="tray-panel">
-        <div style="font-size:10px; color:#a78bfa; margin-bottom:4px; text-align:center; font-weight:bold;">墓地一覧</div>
-        <div style="display:flex; gap:2px; margin-bottom:4px;">
-          <button class="game-btn" onclick="switchGyTab(0)" id="gy-tab-p0" style="flex:1; font-size:8px; background:#4f46e5;">P1</button>
-          <button class="game-btn" onclick="switchGyTab(1)" id="gy-tab-p1" style="flex:1; font-size:8px; background:#334155;">P2</button>
-          <button class="game-btn" onclick="switchGyTab(2)" id="gy-tab-p2" style="flex:1; font-size:8px; background:#334155;">P3</button>
+        <div style="font-size:1.1vh; color:#a78bfa; margin-bottom:0.4vh; text-align:center; font-weight:bold;">墓地一覧</div>
+        <div style="display:flex; gap:0.2vw; margin-bottom:0.6vh;">
+          <button class="game-btn" onclick="switchGyTab(0)" id="gy-tab-p0" style="flex:1; font-size:1vh; background:#4f46e5;">P1</button>
+          <button class="game-btn" onclick="switchGyTab(1)" id="gy-tab-p1" style="flex:1; font-size:1vh; background:#334155;">P2</button>
+          <button class="game-btn" onclick="switchGyTab(2)" id="gy-tab-p2" style="flex:1; font-size:1vh; background:#334155;">P3</button>
         </div>
         <div id="graveyard-list" class="tray-list"></div>
       </div>
@@ -566,6 +578,7 @@
 
   <!-- ホバー画像プレビュー -->
   <div id="hover-preview-card"></div>
+</div>
 
   <script>
     /* ネットワーク通信 (PeerJS) */
@@ -1075,23 +1088,32 @@
 
         trackTop.classList.add('bar-vertical', 'bar-flip');
         trackTop.style.position = 'absolute';
-        trackTop.style.left = '18%';
+        trackTop.style.left = '20%';
         trackTop.style.right = 'auto';
-        trackTop.style.bottom = '15px';
+        trackTop.style.bottom = '2vh';
         trackTop.style.top = 'auto';
+        trackTop.style.width = '2vw';
+        trackTop.style.height = '28vh';
+        trackTop.style.transform = 'rotate(165deg)';
 
         trackLeftP1.classList.add('bar-vertical', 'bar-flip');
         trackLeftP1.style.position = 'absolute';
-        trackLeftP1.style.right = '18%';
+        trackLeftP1.style.right = '20%';
         trackLeftP1.style.left = 'auto';
-        trackLeftP1.style.bottom = '15px';
+        trackLeftP1.style.bottom = '2vh';
         trackLeftP1.style.top = 'auto';
+        trackLeftP1.style.width = '2vw';
+        trackLeftP1.style.height = '28vh';
+        trackLeftP1.style.transform = 'rotate(-165deg)';
 
         trackRightP1.style.position = 'absolute';
-        trackRightP1.style.top = '20px';
+        trackRightP1.style.top = '3vh';
         trackRightP1.style.left = '50%';
         trackRightP1.style.right = 'auto';
         trackRightP1.style.bottom = 'auto';
+        trackRightP1.style.width = '18vw';
+        trackRightP1.style.height = '4vh';
+        trackRightP1.style.transform = 'translateX(-50%)';
 
       } else if (myPlayerIndex === 2) {
         table.appendChild(trackLeftP1);
@@ -1100,24 +1122,33 @@
 
         trackLeftP1.classList.add('bar-flip');
         trackLeftP1.style.position = 'absolute';
-        trackLeftP1.style.top = '20px';
+        trackLeftP1.style.top = '3vh';
         trackLeftP1.style.left = '50%';
         trackLeftP1.style.right = 'auto';
         trackLeftP1.style.bottom = 'auto';
+        trackLeftP1.style.width = '18vw';
+        trackLeftP1.style.height = '4vh';
+        trackLeftP1.style.transform = 'translateX(-50%) rotate(180deg)';
 
         trackRightP1.classList.add('bar-vertical', 'bar-flip');
         trackRightP1.style.position = 'absolute';
-        trackRightP1.style.left = '18%';
+        trackRightP1.style.left = '20%';
         trackRightP1.style.right = 'auto';
         trackRightP1.style.top = 'auto';
-        trackRightP1.style.bottom = '15px';
+        trackRightP1.style.bottom = '2vh';
+        trackRightP1.style.width = '2vw';
+        trackRightP1.style.height = '28vh';
+        trackRightP1.style.transform = 'rotate(165deg)';
 
         trackTop.classList.add('bar-vertical');
         trackTop.style.position = 'absolute';
-        trackTop.style.right = '18%';
+        trackTop.style.right = '20%';
         trackTop.style.left = 'auto';
         trackTop.style.top = 'auto';
-        trackTop.style.bottom = '15px';
+        trackTop.style.bottom = '2vh';
+        trackTop.style.width = '2vw';
+        trackTop.style.height = '28vh';
+        trackTop.style.transform = 'rotate(15deg)';
 
       } else {
         table.appendChild(trackTop);
@@ -1125,24 +1156,33 @@
         table.appendChild(trackRightP1);
 
         trackTop.style.position = 'absolute';
-        trackTop.style.top = '20px';
+        trackTop.style.top = '3vh';
         trackTop.style.left = '50%';
         trackTop.style.right = 'auto';
         trackTop.style.bottom = 'auto';
+        trackTop.style.width = '18vw';
+        trackTop.style.height = '4vh';
+        trackTop.style.transform = 'translateX(-50%)';
 
         trackLeftP1.classList.add('bar-vertical');
         trackLeftP1.style.position = 'absolute';
-        trackLeftP1.style.bottom = '15px';
-        trackLeftP1.style.left = '18%';
+        trackLeftP1.style.bottom = '2vh';
+        trackLeftP1.style.left = '20%';
         trackLeftP1.style.right = 'auto';
         trackLeftP1.style.top = 'auto';
+        trackLeftP1.style.width = '2vw';
+        trackLeftP1.style.height = '28vh';
+        trackLeftP1.style.transform = 'rotate(-15deg)';
 
         trackRightP1.classList.add('bar-vertical');
         trackRightP1.style.position = 'absolute';
-        trackRightP1.style.bottom = '15px';
-        trackRightP1.style.right = '18%';
+        trackRightP1.style.bottom = '2vh';
+        trackRightP1.style.right = '20%';
         trackRightP1.style.left = 'auto';
         trackRightP1.style.top = 'auto';
+        trackRightP1.style.width = '2vw';
+        trackRightP1.style.height = '28vh';
+        trackRightP1.style.transform = 'rotate(15deg)';
       }
 
       ['top', 'left-p1', 'right-p1'].forEach(pos => {
@@ -1202,15 +1242,19 @@
     }
 
     function movePreview(event) {
-      let left = event.clientX + 20, top = event.clientY + 20;
-      const previewWidth = previewEl.offsetWidth || 300;
-      const previewHeight = previewEl.offsetHeight || 420;
-
-      if (left + previewWidth > window.innerWidth) left = event.clientX - previewWidth - 10;
-      if (top + previewHeight > window.innerHeight) top = window.innerHeight - previewHeight - 10;
+      const wrapper = document.getElementById('app-wrapper');
+      const rect = wrapper.getBoundingClientRect();
+      
+      let left = event.clientX - rect.left + 20;
+      let top = event.clientY - rect.top + 20;
+      
+      if (left + previewEl.offsetWidth > rect.width) left = event.clientX - rect.left - previewEl.offsetWidth - 10;
+      if (top + previewEl.offsetHeight > rect.height) top = rect.height - previewEl.offsetHeight - 10;
       if (top < 10) top = 10;
       if (left < 10) left = 10;
-      previewEl.style.left = `${left}px`; previewEl.style.top = `${top}px`;
+      
+      previewEl.style.left = `${left}px`;
+      previewEl.style.top = `${top}px`;
     }
 
     function hidePreview() { previewEl.style.display = 'none'; }
@@ -1303,15 +1347,12 @@
       let stackIndex = placedCards.findIndex(el => el.id === cardId);
       if (stackIndex === -1) stackIndex = placedCards.length;
 
-      const offset = stackIndex * 6;
+      const offset = stackIndex * 8;
 
       const slotRect = targetSlot.getBoundingClientRect();
-      const cardWidth = Math.min(56, slotRect.width * 0.8);
-      const cardHeight = Math.min(78, slotRect.height * 0.8);
-
       return {
-        x: slotRect.left - tableRect.left + (slotRect.width - cardWidth) / 2 - offset,
-        y: slotRect.top - tableRect.top + (slotRect.height - cardHeight) / 2 - offset
+        x: slotRect.left - tableRect.left + (slotRect.width - (tableRect.width * 0.04)) / 2 - offset,
+        y: slotRect.top - tableRect.top + (slotRect.height - (tableRect.height * 0.1)) / 2 - offset
       };
     }
 
@@ -1453,8 +1494,8 @@
       const tableRect = table.getBoundingClientRect();
       
       const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-      const startX = e.clientX - tableRect.left - 25;
-      const startY = e.clientY - tableRect.top - 35;
+      const startX = e.clientX - tableRect.left - (tableRect.width * 0.02);
+      const startY = e.clientY - tableRect.top - (tableRect.height * 0.05);
 
       const faceDownMode = forceFaceDown || (e.button === 2);
 
@@ -1514,7 +1555,7 @@
       if (data.tapped) cardEl.classList.add('card-tapped');
 
       if (data.faceDown) {
-        cardEl.innerHTML = `<div style="font-size:9px; color:#64748b; margin-top:20px;">裏面</div>`;
+        cardEl.innerHTML = `<div style="font-size:1vh; color:#64748b; margin-top:3vh;">裏面</div>`;
       } else {
         cardEl.innerHTML = `<img src="${data.card.img}" alt="card">`;
       }
@@ -1773,8 +1814,8 @@
 
       const table = document.getElementById('zone-table');
       const tableRect = table.getBoundingClientRect();
-      const centerX = tableRect.width / 2 - 25;
-      const centerY = tableRect.height / 2 - 35;
+      const centerX = tableRect.width / 2 - (tableRect.width * 0.02);
+      const centerY = tableRect.height / 2 - (tableRect.height * 0.05);
 
       const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
       const cardData = {
@@ -1822,8 +1863,8 @@
 
         const table = document.getElementById('zone-table');
         const tableRect = table.getBoundingClientRect();
-        const posX = e.clientX - tableRect.left - 25;
-        const posY = e.clientY - tableRect.top - 35;
+        const posX = e.clientX - tableRect.left - (tableRect.width * 0.02);
+        const posY = e.clientY - tableRect.top - (tableRect.height * 0.05);
 
         const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
         const cardData = {
@@ -1881,8 +1922,8 @@
         mEl.id = m.id;
         mEl.className = `mana-card mana-${m.color}` + (m.tapped ? ' tapped' : '');
         mEl.innerText = m.color.substring(0, 1).toUpperCase();
-        mEl.style.left = `${10 + idx * 40}px`;
-        mEl.style.top = `8px`;
+        mEl.style.left = `${1 + idx * 3.2}vw`;
+        mEl.style.top = `1.5vh`;
 
         let isDragging = false, startX, startY;
         let clickStartTime = 0;
@@ -1895,8 +1936,8 @@
 
           const onMM = (me) => {
             if (!isDragging) return;
-            mEl.style.left = `${me.clientX - manaZone.getBoundingClientRect().left - 18}px`;
-            mEl.style.top = `${me.clientY - manaZone.getBoundingClientRect().top - 25}px`;
+            mEl.style.left = `${me.clientX - manaZone.getBoundingClientRect().left - 15}px`;
+            mEl.style.top = `${me.clientY - manaZone.getBoundingClientRect().top - 20}px`;
           };
 
           const onMU = (me) => {
@@ -1969,7 +2010,7 @@
       const targetGy = graveyards[currentGyTab] || [];
       targetGy.forEach((card) => {
         const cEl = createCardElement(card);
-        cEl.style.height = 'clamp(80px, 12vh, 125px)';
+        cEl.style.height = '12vh';
         const img = cEl.querySelector('img');
         if (img) img.style.objectFit = 'contain';
 
@@ -2000,7 +2041,7 @@
 
       searchList.forEach(card => {
         const cEl = createCardElement(card);
-        cEl.style.height = 'clamp(80px, 12vh, 125px)';
+        cEl.style.height = '12vh';
         const img = cEl.querySelector('img');
         if (img) img.style.objectFit = 'contain';
 
@@ -2032,10 +2073,10 @@
       
       if (isVertical) {
         handle.style.top = offsetsVertical[stage];
-        handle.style.left = 'calc(50% - 25px)';
+        handle.style.left = 'calc(50% - 2.25vw)';
       } else {
         handle.style.left = offsetsHorizontal[stage];
-        handle.style.top = 'calc(50% - 25px)';
+        handle.style.top = 'calc(50% - 4vh)';
       }
     }
   </script>
