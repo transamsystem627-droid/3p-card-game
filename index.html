@@ -8,7 +8,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
-    /* 画面全体で16:9コンテナを中央配置する背景 */
+    /* 画面全体で64:31コンテナを中央配置する背景 */
     body {
       font-family: sans-serif;
       background: #020617;
@@ -21,12 +21,12 @@
       overflow: hidden;
     }
 
-    /* どんなディスプレイでも16:9の割合を崩さないルートコンテナ */
+    /* どんなディスプレイでも64:31の割合を崩さないルートコンテナ */
     #app-wrapper {
       position: relative;
-      width: min(100vw, calc(100vh * 16 / 9));
-      height: min(100vh, calc(100vw * 9 / 16));
-      aspect-ratio: 16 / 9;
+      width: min(100vw, calc(100vh * 64 / 31));
+      height: min(100vh, calc(100vw * 31 / 64));
+      aspect-ratio: 64 / 31;
       background: #0f172a;
       display: flex;
       flex-direction: column;
