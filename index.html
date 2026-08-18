@@ -2,12 +2,25 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>トリニティドラフト ＆ 対戦モード統合版</title>
   <!-- PeerJS の読み込み -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: sans-serif; background: #0f172a; color: #fff; height: 100vh; display: flex; flex-direction: column; padding: 10px; position: relative; overflow: hidden; }
+    html, body {
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      font-family: sans-serif;
+      background: #0f172a;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      position: relative;
+      overflow: hidden;
+    }
 
     /* ロビー画面 */
     #lobby-view {
@@ -17,10 +30,10 @@
     }
     .lobby-card {
       background: #1e293b; border: 2px solid #6366f1; border-radius: 12px;
-      padding: 30px; width: 100%; max-width: 480px; text-align: center;
+      padding: 24px; width: 90%; max-width: 480px; text-align: center;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    .lobby-title { font-size: 22px; font-weight: bold; color: #38bdf8; margin-bottom: 20px; }
+    .lobby-title { font-size: clamp(18px, 2.5vw, 22px); font-weight: bold; color: #38bdf8; margin-bottom: 20px; }
     .input-group { margin: 15px 0; display: flex; gap: 8px; justify-content: center; }
     input[type="text"] {
       padding: 10px; width: 65%; border-radius: 6px; border: 1px solid #475569;
@@ -45,28 +58,28 @@
     /* Header Styles */
     #header-bar {
       background: #1e293b; border: 2px solid #6366f1; border-radius: 8px;
-      padding: 8px 16px; display: flex; justify-content: space-between;
-      align-items: center; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); flex-shrink: 0;
+      padding: 6px 12px; display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); flex-shrink: 0;
     }
-    .status-title { font-size: 16px; font-weight: bold; color: #38bdf8; }
-    .status-info { font-size: 13px; color: #cbd5e1; display: flex; gap: 16px; }
-    .status-badge { background: #334155; padding: 4px 8px; border-radius: 4px; border: 1px solid #475569; }
+    .status-title { font-size: clamp(14px, 1.5vw, 16px); font-weight: bold; color: #38bdf8; }
+    .status-info { font-size: clamp(11px, 1.2vw, 13px); color: #cbd5e1; display: flex; gap: 10px; }
+    .status-badge { background: #334155; padding: 3px 6px; border-radius: 4px; border: 1px solid #475569; }
 
-    .view-stage { display: flex; gap: 12px; flex: 1; min-height: 0; }
+    .view-stage { display: flex; gap: 10px; flex: 1; min-height: 0; height: calc(100% - 40px); }
 
     /* Draft View */
     #pack-section {
       flex: 3; background: #1e293b; border: 1px solid #334155; border-radius: 8px;
-      padding: 12px; display: flex; flex-direction: column; min-height: 0;
+      padding: 10px; display: flex; flex-direction: column; min-height: 0;
     }
-    .section-title { font-size: 13px; color: #94a3b8; margin-bottom: 6px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+    .section-title { font-size: 12px; color: #94a3b8; margin-bottom: 6px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
     #pack-cards {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-      gap: 8px; flex: 1; overflow-y: auto; padding: 4px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 6px; flex: 1; overflow-y: auto; padding: 4px; align-content: start;
     }
 
     #sidebar-section { flex: 1.2; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
-    .panel-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; min-height: 0; }
+    .panel-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; min-height: 0; }
     .player-status-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
     .player-status-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 4px 8px; border-radius: 4px; font-size: 11px; }
     .ready-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
@@ -75,15 +88,15 @@
 
     #picked-cards-container { flex: 1; display: flex; flex-direction: column; min-height: 0; }
     #picked-cards {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-      gap: 6px; flex: 1; overflow-y: auto; padding: 4px; background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
+      gap: 4px; flex: 1; overflow-y: auto; padding: 4px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; align-content: start;
     }
 
     /* Deck Builder View */
-    #deck-builder-view { display: none; width: 100%; height: 100%; }
-    #pool-section { flex: 1.2; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; min-height: 0; }
+    #deck-builder-view { display: none; width: 100%; height: calc(100% - 40px); }
+    #pool-section { flex: 1.2; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; min-height: 0; }
     #pool-cards {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); grid-auto-rows: max-content;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); grid-auto-rows: max-content;
       gap: 6px; flex: 1; overflow-y: auto; background: #0f172a; padding: 6px; border-radius: 6px; border: 1px solid #334155; align-content: start;
     }
 
@@ -94,16 +107,16 @@
     }
     .deck-drop-zone.drag-over { border-color: #38bdf8; background: #334155; }
     .deck-card-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); grid-auto-rows: max-content;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); grid-auto-rows: max-content;
       gap: 6px; flex: 1; overflow-y: auto; background: #0f172a; padding: 6px; border-radius: 6px; align-content: start;
     }
 
-    #special-card-section { flex: 1; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; min-height: 0; }
-    #special-card-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 6px; }
+    #special-card-section { flex: 1; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; min-height: 0; }
+    #special-card-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 4px; overflow-y: auto; }
 
     /* Card Items UI - 画像のみ表示 */
     .card-item {
-      width: 100%; height: 105px; background: #1e293b; border: 2px solid #64748b;
+      width: 100%; height: clamp(75px, 10vh, 105px); background: #1e293b; border: 2px solid #64748b;
       border-radius: 6px; cursor: grab; user-select: none; transition: border-color 0.15s, transform 0.15s;
       overflow: hidden; display: flex; align-items: center; justify-content: center;
     }
@@ -113,15 +126,15 @@
     .card-img-thumb { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
 
     .special-card-item {
-      height: 110px; background: #1e1b4b; border: 2px solid #a855f7; border-radius: 6px;
+      height: clamp(80px, 11vh, 110px); background: #1e1b4b; border: 2px solid #a855f7; border-radius: 6px;
       cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center;
     }
     .special-card-item img { object-fit: contain; }
     .special-card-item.active { border-color: #f59e0b !important; box-shadow: 0 0 12px rgba(245, 158, 11, 0.8); }
 
     .action-btn {
-      width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 6px;
-      font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      width: 100%; padding: 8px; background: #10b981; color: white; border: none; border-radius: 6px;
+      font-size: 13px; font-weight: bold; cursor: pointer; margin-top: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); flex-shrink: 0;
     }
     .action-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; }
 
@@ -132,7 +145,7 @@
     }
 
     #hover-preview-card {
-      position: fixed; width: 400px; height: 560px; background: #020617;
+      position: fixed; width: clamp(260px, 22vw, 380px); height: clamp(360px, 31vw, 530px); background: #020617;
       border: 3px solid #38bdf8; border-radius: 12px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
       display: none; pointer-events: none; z-index: 300000; padding: 6px; overflow: hidden;
     }
@@ -141,39 +154,38 @@
     .preview-dummy-card {
       width: 100%; height: 100%; background: #0f172a; border: 2px dashed #475569;
       border-radius: 8px; display: flex; align-items: center; justify-content: center;
-      font-size: 120px; font-weight: bold; color: #64748b; user-select: none;
+      font-size: 80px; font-weight: bold; color: #64748b; user-select: none;
     }
 
     /* Battle View */
-    #battle-view { display: none; height: 100%; flex-direction: column; }
-    #play-field { display: flex; flex-direction: column; gap: 8px; height: 100%; padding-right: 230px; }
+    #battle-view { display: none; height: 100%; flex-direction: column; overflow: hidden; position: relative; }
+    #play-field { display: flex; flex-direction: column; gap: 6px; height: 100%; width: calc(100% - clamp(180px, 15vw, 220px)); }
 
     #score-bar {
       display: flex; justify-content: space-around; align-items: center; background: #020617;
-      border: 2px solid #6366f1; border-radius: 8px; padding: 6px 16px; box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
+      border: 2px solid #6366f1; border-radius: 8px; padding: 4px 12px; box-shadow: 0 0 12px rgba(99, 102, 241, 0.3); flex-shrink: 0;
     }
-    .score-group { display: flex; align-items: center; gap: 8px; font-size: 11px; }
-    .score-p-title { font-weight: bold; font-size: 12px; }
+    .score-group { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+    .score-p-title { font-weight: bold; font-size: 11px; }
     .score-p1-title { color: #818cf8; }
     .score-p2-title { color: #38bdf8; }
     .score-p3-title { color: #f43f5e; }
-    .score-box { display: flex; align-items: center; gap: 4px; background: #1e293b; padding: 2px 6px; border-radius: 4px; border: 1px solid #475569; }
-    .score-label { color: #94a3b8; font-size: 10px; }
-    .score-val { font-size: 13px; font-weight: bold; color: #38bdf8; }
+    .score-box { display: flex; align-items: center; gap: 3px; background: #1e293b; padding: 2px 5px; border-radius: 4px; border: 1px solid #475569; }
+    .score-label { color: #94a3b8; font-size: 9px; }
+    .score-val { font-size: 11px; font-weight: bold; color: #38bdf8; }
 
-    #main-board { display: grid; grid-template-columns: 180px 1fr; gap: 8px; flex: 1; min-height: 0; }
-    .zone { border: 2px dashed #475569; border-radius: 8px; padding: 6px; background: #0f172a; position: relative; }
-    .zone-title { font-size: 11px; color: #94a3b8; text-align: center; }
+    #main-board { display: grid; grid-template-columns: minmax(130px, 160px) 1fr; gap: 6px; flex: 1; min-height: 0; }
+    .zone { border: 2px dashed #475569; border-radius: 8px; padding: 4px; background: #0f172a; position: relative; }
+    .zone-title { font-size: 10px; color: #94a3b8; text-align: center; }
 
-    /* 縦方向サイズ変更: ボタン類の縦を大きく */
-    button.game-btn { padding: 8px 8px; background: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
+    button.game-btn { padding: 6px 4px; background: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; }
     button.game-btn:hover { background: #6366f1; }
     #refresh-btn { background: #10b981; margin-top: 4px; width: 100%; display: none; }
     #refresh-btn:hover { background: #059669; }
 
-    #mana-zone { border-color: #3b82f6; background: #091e3a; height: 80px; position: relative; overflow: hidden; display: flex; align-items: center; padding-right: 120px; }
-    .mana-btn { padding: 2px 6px; font-size: 10px; border-radius: 3px; border: none; color: white; cursor: pointer; }
-    .mana-card { width: 42px; height: 60px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: grab; user-select: none; position: absolute; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 5; transition: transform 0.15s; }
+    #mana-zone { border-color: #3b82f6; background: #091e3a; height: 65px; position: relative; overflow: hidden; display: flex; align-items: center; padding-right: 100px; flex-shrink: 0; }
+    .mana-btn { padding: 2px 4px; font-size: 9px; border-radius: 3px; border: none; color: white; cursor: pointer; }
+    .mana-card { width: 36px; height: 50px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; cursor: grab; user-select: none; position: absolute; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 5; transition: transform 0.15s; }
     .mana-card:active { cursor: grabbing; }
     .mana-red { background: #ef4444; color: #fff; }
     .mana-yellow { background: #eab308; color: #000; }
@@ -182,15 +194,15 @@
     .mana-card.tapped { transform: rotate(90deg); }
 
     .btn-untap-all {
-      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-      padding: 6px 10px; background: #38bdf8; color: #0f172a; font-weight: bold;
-      font-size: 11px; border: none; border-radius: 4px; cursor: pointer; z-index: 10;
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      padding: 4px 8px; background: #38bdf8; color: #0f172a; font-weight: bold;
+      font-size: 10px; border: none; border-radius: 4px; cursor: pointer; z-index: 10;
       box-shadow: 0 2px 6px rgba(0,0,0,0.4); transition: 0.2s;
     }
     .btn-untap-all:hover { background: #7dd3fc; }
 
     .dummy-card {
-      width: 60px; height: 84px; background: #1e293b; border: 2px solid #94a3b8; border-radius: 4px;
+      width: clamp(45px, 4.5vw, 56px); height: clamp(63px, 6.3vw, 78px); background: #1e293b; border: 2px solid #94a3b8; border-radius: 4px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
     }
@@ -208,15 +220,14 @@
     .card-rot-p3 { transform: rotate(-160deg); }
     .card-tapped { transform: rotate(90deg) !important; }
 
-    /* 縦方向サイズ変更: 左側ゾーンの縦を少しだけ拡大 */
     .left-action-zone { 
       width: 100%; 
-      padding: 12px 4px; 
-      min-height: 42px;
+      padding: 6px 2px; 
+      min-height: 32px;
       border: 1px dashed #475569; 
       border-radius: 6px; 
       text-align: center; 
-      font-size: 11px; 
+      font-size: 10px; 
       display: flex;
       align-items: center;
       justify-content: center;
@@ -226,51 +237,55 @@
     #deck-bottom-zone { border-color: #f59e0b; background: #451a03; color: #fde68a; }
     #graveyard-zone { border-color: #8b5cf6; background: #2e1065; color: #ddd6fe; cursor: pointer; }
 
-    #bottom-hand-panel { height: 145px; background: #0f172a; border: 2px dashed #10b981; border-radius: 8px; padding: 6px; display: flex; flex-direction: column; }
-    #hand-cards { display: flex; gap: 8px; overflow-x: auto; flex: 1; align-items: center; padding-top: 2px; }
-    .hand-card-wrapper { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    #bottom-hand-panel { height: clamp(110px, 16vh, 135px); background: #0f172a; border: 2px dashed #10b981; border-radius: 8px; padding: 4px; display: flex; flex-direction: column; flex-shrink: 0; }
+    #hand-cards { display: flex; gap: 6px; overflow-x: auto; flex: 1; align-items: center; padding-top: 2px; }
+    .hand-card-wrapper { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     
     .btn-facedown {
-      padding: 2px 6px; font-size: 9px; border: 1px solid #475569; background: #1e293b;
-      color: #cbd5e1; border-radius: 4px; cursor: grab; user-select: none; transition: 0.15s;
+      padding: 1px 4px; font-size: 8px; border: 1px solid #475569; background: #1e293b;
+      color: #cbd5e1; border-radius: 3px; cursor: grab; user-select: none; transition: 0.15s;
     }
     .btn-facedown:hover { background: #334155; color: #38bdf8; border-color: #38bdf8; }
     .btn-facedown:active { cursor: grabbing; }
 
-    #side-container { position: fixed; right: 10px; top: 75px; width: 210px; height: calc(100vh - 90px); display: flex; flex-direction: column; gap: 8px; z-index: 200; pointer-events: none; }
-    .tray-panel { background: rgba(15, 23, 42, 0.95); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; pointer-events: auto; }
-    .tray-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; overflow-y: auto; flex: 1; padding-right: 2px; }
+    #side-container { 
+      position: absolute; right: 0; top: 0; 
+      width: clamp(170px, 14vw, 210px); height: 100%; 
+      display: flex; flex-direction: column; gap: 6px; z-index: 200; pointer-events: none; 
+    }
+    .tray-panel { background: rgba(15, 23, 42, 0.95); border-radius: 8px; padding: 6px; display: flex; flex-direction: column; pointer-events: auto; }
+    .tray-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; overflow-y: auto; flex: 1; padding-right: 2px; }
     .tray-list .card-img-thumb { object-fit: contain; }
 
-    #deck-search-panel { border: 2px solid #0ea5e9; height: 35%; display: none; }
-    #graveyard-tray { border: 2px solid #8b5cf6; flex: 1; }
+    #deck-search-panel { border: 2px solid #0ea5e9; height: 40%; display: none; }
+    #graveyard-tray { border: 2px solid #8b5cf6; flex: 1; min-height: 0; }
 
     .lock-slot-container {
-      position: absolute; width: 560px; height: 240px; border: 2px dashed #6366f1; border-radius: 8px;
+      position: absolute; width: clamp(380px, 42vw, 520px); height: clamp(160px, 20vh, 220px); border: 2px dashed #6366f1; border-radius: 8px;
       background: rgba(30, 41, 59, 0.4); display: grid; grid-template-columns: repeat(7, 1fr);
-      grid-template-rows: repeat(2, 1fr); gap: 8px; padding: 10px; z-index: 2; pointer-events: auto;
+      grid-template-rows: repeat(2, 1fr); gap: 4px; padding: 6px; z-index: 2; pointer-events: auto;
     }
     .lock-slot {
-      width: 70px; height: 98px; border: 1px dashed #475569; border-radius: 6px;
-      display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; text-align: center;
+      width: 100%; height: 100%; border: 1px dashed #475569; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center; font-size: 9px; color: #64748b; text-align: center;
       background: rgba(15, 23, 42, 0.3); transition: border-color 0.15s;
     }
     
-    #p1-lock-zone { bottom: 8px; left: 50%; transform: translateX(-50%); }
-    #p2-lock-zone { top: 60px; left: 2%; transform: rotate(160deg); transform-origin: center center; }
-    #p3-lock-zone { top: 60px; right: 2%; transform: rotate(-160deg); transform-origin: center center; }
+    #p1-lock-zone { bottom: 6px; left: 50%; transform: translateX(-50%); }
+    #p2-lock-zone { top: 40px; left: 1%; transform: rotate(160deg); transform-origin: center center; }
+    #p3-lock-zone { top: 40px; right: 1%; transform: rotate(-160deg); transform-origin: center center; }
 
     .opponent-overlay-info {
-      position: absolute; top: 8px; background: rgba(15, 23, 42, 0.85);
-      border: 1px solid #334155; border-radius: 6px; padding: 6px 12px;
-      font-size: 11px; z-index: 30; pointer-events: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      position: absolute; top: 4px; background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #334155; border-radius: 6px; padding: 4px 8px;
+      font-size: 10px; z-index: 30; pointer-events: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     }
-    #p2-overlay-info { left: 8px; border-left: 3px solid #38bdf8; }
-    #p3-overlay-info { right: 8px; border-right: 3px solid #f43f5e; }
+    #p2-overlay-info { left: 6px; border-left: 3px solid #38bdf8; }
+    #p3-overlay-info { right: 6px; border-right: 3px solid #f43f5e; }
 
     .bar-track-container {
       position: absolute; background: rgba(15, 23, 42, 0.7);
-      border: 1px solid #334155; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; padding: 6px 12px; z-index: 20;
+      border: 1px solid #334155; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; padding: 4px 8px; z-index: 20;
     }
     .bar-track-line { position: relative; width: 100%; height: 6px; background: #1e293b; border-radius: 3px; display: flex; justify-content: space-between; align-items: center; }
     .bar-node { width: 8px; height: 8px; background: #475569; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 21; }
@@ -282,23 +297,23 @@
       box-shadow: 0 0 12px rgba(245, 158, 11, 0.8);
     }
     
-    #track-top { top: 30px; left: 50%; transform: translateX(-50%); width: 260px; height: 32px; }
-    .bar-track-container .movable-bar-handle { width: 26px; height: 70px; top: calc(50% - 35px); }
+    #track-top { top: 20px; left: 50%; transform: translateX(-50%); width: clamp(180px, 20vw, 240px); height: 28px; }
+    .bar-track-container .movable-bar-handle { width: 22px; height: 50px; top: calc(50% - 25px); }
 
-    .bar-vertical { width: 32px; height: 230px; padding: 12px 6px; }
+    .bar-vertical { width: 28px; height: clamp(160px, 18vh, 210px); padding: 8px 4px; }
     .bar-vertical .bar-track-line { width: 6px; height: 100%; flex-direction: column; margin: 0 auto; }
-    .bar-vertical .movable-bar-handle { width: 70px; height: 26px; left: calc(50% - 35px); top: auto; }
+    .bar-vertical .movable-bar-handle { width: 50px; height: 22px; left: calc(50% - 25px); top: auto; }
 
-    #track-left-p1 { bottom: 20px; left: 20%; transform-origin: center center; transform: rotate(-15deg); }
-    #track-right-p1 { bottom: 20px; right: 20%; transform-origin: center center; transform: rotate(15deg); }
+    #track-left-p1 { bottom: 15px; left: 18%; transform-origin: center center; transform: rotate(-15deg); }
+    #track-right-p1 { bottom: 15px; right: 18%; transform-origin: center center; transform: rotate(15deg); }
     .bar-flip { transform: rotate(180deg); }
 
-    .counter-box { margin-top: 4px; padding: 4px; background: #1e1b4b; border: 1px solid #6366f1; border-radius: 6px; text-align: center; }
-    .counter-btn { width: 22px; height: 22px; padding: 0; font-weight: bold; font-size: 12px; border-radius: 4px; background: #4f46e5; color: #fff; border: none; cursor: pointer; }
+    .counter-box { margin-top: 4px; padding: 2px; background: #1e1b4b; border: 1px solid #6366f1; border-radius: 6px; text-align: center; }
+    .counter-btn { width: 18px; height: 18px; padding: 0; font-weight: bold; font-size: 10px; border-radius: 3px; background: #4f46e5; color: #fff; border: none; cursor: pointer; }
 
-    /* モーダル表示サイズを拡大（420px x 588px） */
+    /* モーダル表示サイズ */
     #life-reveal-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(6px); }
-    #modal-card { width: 420px; height: 588px; background: #020617; border: 4px solid #38bdf8; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 10px; overflow: hidden; }
+    #modal-card { width: clamp(280px, 30vw, 420px); height: clamp(390px, 42vw, 588px); background: #020617; border: 4px solid #38bdf8; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 10px; overflow: hidden; }
     #modal-card img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
   </style>
 </head>
@@ -413,19 +428,19 @@
       <div id="score-bar"></div>
 
       <div id="main-board">
-        <div style="display: flex; flex-direction: column; gap: 6px; overflow-y: auto;">
+        <div style="display: flex; flex-direction: column; gap: 4px; overflow-y: auto;">
           <div class="zone">
             <div class="zone-title" id="deck-title">メイン (<span id="deck-count">23</span>)</div>
-            <button class="game-btn" onclick="drawCard()" style="width:100%; margin-top:4px;">1枚引く</button>
-            <button class="game-btn" onclick="revealTopDeckCard()" style="width:100%; margin-top:4px; background:#eab308; color:#000; font-weight:bold;">1枚めくる</button>
-            <button id="refresh-btn" class="game-btn" onclick="refreshDeck()" style="display:block; margin-top:4px;">墓地を戻してリフレッシュ</button>
-            <button class="game-btn" style="width:100%; margin-top:4px;" onclick="toggleDeckSearch()">検索</button>
+            <button class="game-btn" onclick="drawCard()" style="width:100%; margin-top:2px;">1枚引く</button>
+            <button class="game-btn" onclick="revealTopDeckCard()" style="width:100%; margin-top:2px; background:#eab308; color:#000; font-weight:bold;">1枚めくる</button>
+            <button id="refresh-btn" class="game-btn" onclick="refreshDeck()" style="display:block; margin-top:2px;">墓地を戻してリフレッシュ</button>
+            <button class="game-btn" style="width:100%; margin-top:2px;" onclick="toggleDeckSearch()">検索</button>
           </div>
           
-          <div class="zone" style="cursor:pointer; min-height:45px;" onclick="revealLifeCard('left')">
+          <div class="zone" style="cursor:pointer; min-height:36px;" onclick="revealLifeCard('left')">
             <div class="zone-title">左ライフ (<span id="left-life-count">8</span>)<br><small style="color:#38bdf8;">めくる</small></div>
           </div>
-          <div class="zone" style="cursor:pointer; min-height:45px;" onclick="revealLifeCard('right')">
+          <div class="zone" style="cursor:pointer; min-height:36px;" onclick="revealLifeCard('right')">
             <div class="zone-title">右ライフ (<span id="right-life-count">8</span>)<br><small style="color:#f43f5e;">めくる</small></div>
           </div>
           
@@ -439,10 +454,10 @@
             </div>
 
             <div class="counter-box">
-              <div style="font-size:10px; color:#c7d2fe; margin-bottom:2px;">トリニティ</div>
-              <div style="display:flex; gap:8px; align-items:center; justify-content:center;">
+              <div style="font-size:9px; color:#c7d2fe; margin-bottom:2px;">トリニティ</div>
+              <div style="display:flex; gap:6px; align-items:center; justify-content:center;">
                 <button class="counter-btn" onclick="updateTrinity(-1)">−</button>
-                <span id="counter-num" style="font-size:14px; font-weight:bold; color:#fff;">0</span>
+                <span id="counter-num" style="font-size:12px; font-weight:bold; color:#fff;">0</span>
                 <button class="counter-btn" onclick="updateTrinity(1)">＋</button>
               </div>
             </div>
@@ -454,8 +469,8 @@
           <div class="left-action-zone" id="graveyard-zone"><b>自分の墓地 (<span id="gy-count">0</span>)</b></div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          <div class="zone" id="zone-table" style="flex: 1; position:relative;" ondragover="allowDrop(event)" ondrop="handleTableDrop(event)">
+        <div style="display: flex; flex-direction: column; gap: 4px; min-height: 0;">
+          <div class="zone" id="zone-table" style="flex: 1; position:relative; min-height: 0;" ondragover="allowDrop(event)" ondrop="handleTableDrop(event)">
             <div id="p2-overlay-info" class="opponent-overlay-info">
               <div id="p2-overlay-title" style="font-weight:bold; color:#38bdf8; margin-bottom:2px;">プレイヤー 2</div>
               手札: <span id="p2-hand-count-overlay" style="color:#fff; font-weight:bold;">0</span> 枚 | 
@@ -508,7 +523,7 @@
           </div>
           
           <div class="zone" id="mana-zone">
-            <div class="zone-title" style="margin-right:12px;">自分のマナゾーン<br><small>(枠外ドラッグで削除)</small></div>
+            <div class="zone-title" style="margin-right:8px;">自分のマナゾーン<br><small>(枠外ドラッグで削除)</small></div>
             <button class="btn-untap-all" onclick="untapAllMana()">すべてのマナを起こす</button>
           </div>
         </div>
@@ -523,18 +538,18 @@
     <div id="side-container">
       <div id="deck-search-panel" class="tray-panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-          <span style="font-size:11px; color:#38bdf8; font-weight:bold;">デッキ内検索 (ランダム表示)</span>
+          <span style="font-size:10px; color:#38bdf8; font-weight:bold;">デッキ内検索</span>
           <button class="game-btn" onclick="toggleDeckSearch()" style="padding:0 4px; background:#334155;">✕</button>
         </div>
         <div id="deck-search-list" class="tray-list"></div>
       </div>
 
       <div id="graveyard-tray" class="tray-panel">
-        <div style="font-size:11px; color:#a78bfa; margin-bottom:4px; text-align:center; font-weight:bold;">墓地一覧</div>
-        <div style="display:flex; gap:2px; margin-bottom:6px;">
-          <button class="game-btn" onclick="switchGyTab(0)" id="gy-tab-p0" style="flex:1; font-size:9px; background:#4f46e5;">P1</button>
-          <button class="game-btn" onclick="switchGyTab(1)" id="gy-tab-p1" style="flex:1; font-size:9px; background:#334155;">P2</button>
-          <button class="game-btn" onclick="switchGyTab(2)" id="gy-tab-p2" style="flex:1; font-size:9px; background:#334155;">P3</button>
+        <div style="font-size:10px; color:#a78bfa; margin-bottom:4px; text-align:center; font-weight:bold;">墓地一覧</div>
+        <div style="display:flex; gap:2px; margin-bottom:4px;">
+          <button class="game-btn" onclick="switchGyTab(0)" id="gy-tab-p0" style="flex:1; font-size:8px; background:#4f46e5;">P1</button>
+          <button class="game-btn" onclick="switchGyTab(1)" id="gy-tab-p1" style="flex:1; font-size:8px; background:#334155;">P2</button>
+          <button class="game-btn" onclick="switchGyTab(2)" id="gy-tab-p2" style="flex:1; font-size:8px; background:#334155;">P3</button>
         </div>
         <div id="graveyard-list" class="tray-list"></div>
       </div>
@@ -1060,32 +1075,23 @@
 
         trackTop.classList.add('bar-vertical', 'bar-flip');
         trackTop.style.position = 'absolute';
-        trackTop.style.left = '20%';
+        trackTop.style.left = '18%';
         trackTop.style.right = 'auto';
-        trackTop.style.bottom = '20px';
+        trackTop.style.bottom = '15px';
         trackTop.style.top = 'auto';
-        trackTop.style.width = '32px';
-        trackTop.style.height = '230px';
-        trackTop.style.transform = 'rotate(165deg)';
 
         trackLeftP1.classList.add('bar-vertical', 'bar-flip');
         trackLeftP1.style.position = 'absolute';
-        trackLeftP1.style.right = '20%';
+        trackLeftP1.style.right = '18%';
         trackLeftP1.style.left = 'auto';
-        trackLeftP1.style.bottom = '20px';
+        trackLeftP1.style.bottom = '15px';
         trackLeftP1.style.top = 'auto';
-        trackLeftP1.style.width = '32px';
-        trackLeftP1.style.height = '230px';
-        trackLeftP1.style.transform = 'rotate(-165deg)';
 
         trackRightP1.style.position = 'absolute';
-        trackRightP1.style.top = '30px';
+        trackRightP1.style.top = '20px';
         trackRightP1.style.left = '50%';
         trackRightP1.style.right = 'auto';
         trackRightP1.style.bottom = 'auto';
-        trackRightP1.style.width = '260px';
-        trackRightP1.style.height = '32px';
-        trackRightP1.style.transform = 'translateX(-50%)';
 
       } else if (myPlayerIndex === 2) {
         table.appendChild(trackLeftP1);
@@ -1094,33 +1100,24 @@
 
         trackLeftP1.classList.add('bar-flip');
         trackLeftP1.style.position = 'absolute';
-        trackLeftP1.style.top = '30px';
+        trackLeftP1.style.top = '20px';
         trackLeftP1.style.left = '50%';
         trackLeftP1.style.right = 'auto';
         trackLeftP1.style.bottom = 'auto';
-        trackLeftP1.style.width = '260px';
-        trackLeftP1.style.height = '32px';
-        trackLeftP1.style.transform = 'translateX(-50%) rotate(180deg)';
 
         trackRightP1.classList.add('bar-vertical', 'bar-flip');
         trackRightP1.style.position = 'absolute';
-        trackRightP1.style.left = '20%';
+        trackRightP1.style.left = '18%';
         trackRightP1.style.right = 'auto';
         trackRightP1.style.top = 'auto';
-        trackRightP1.style.bottom = '20px';
-        trackRightP1.style.width = '32px';
-        trackRightP1.style.height = '230px';
-        trackRightP1.style.transform = 'rotate(165deg)';
+        trackRightP1.style.bottom = '15px';
 
         trackTop.classList.add('bar-vertical');
         trackTop.style.position = 'absolute';
-        trackTop.style.right = '20%';
+        trackTop.style.right = '18%';
         trackTop.style.left = 'auto';
         trackTop.style.top = 'auto';
-        trackTop.style.bottom = '20px';
-        trackTop.style.width = '32px';
-        trackTop.style.height = '230px';
-        trackTop.style.transform = 'rotate(15deg)';
+        trackTop.style.bottom = '15px';
 
       } else {
         table.appendChild(trackTop);
@@ -1128,33 +1125,24 @@
         table.appendChild(trackRightP1);
 
         trackTop.style.position = 'absolute';
-        trackTop.style.top = '30px';
+        trackTop.style.top = '20px';
         trackTop.style.left = '50%';
         trackTop.style.right = 'auto';
         trackTop.style.bottom = 'auto';
-        trackTop.style.width = '260px';
-        trackTop.style.height = '32px';
-        trackTop.style.transform = 'translateX(-50%)';
 
         trackLeftP1.classList.add('bar-vertical');
         trackLeftP1.style.position = 'absolute';
-        trackLeftP1.style.bottom = '20px';
-        trackLeftP1.style.left = '20%';
+        trackLeftP1.style.bottom = '15px';
+        trackLeftP1.style.left = '18%';
         trackLeftP1.style.right = 'auto';
         trackLeftP1.style.top = 'auto';
-        trackLeftP1.style.width = '32px';
-        trackLeftP1.style.height = '230px';
-        trackLeftP1.style.transform = 'rotate(-15deg)';
 
         trackRightP1.classList.add('bar-vertical');
         trackRightP1.style.position = 'absolute';
-        trackRightP1.style.bottom = '20px';
-        trackRightP1.style.right = '20%';
+        trackRightP1.style.bottom = '15px';
+        trackRightP1.style.right = '18%';
         trackRightP1.style.left = 'auto';
         trackRightP1.style.top = 'auto';
-        trackRightP1.style.width = '32px';
-        trackRightP1.style.height = '230px';
-        trackRightP1.style.transform = 'rotate(15deg)';
       }
 
       ['top', 'left-p1', 'right-p1'].forEach(pos => {
@@ -1215,8 +1203,11 @@
 
     function movePreview(event) {
       let left = event.clientX + 20, top = event.clientY + 20;
-      if (left + 420 > window.innerWidth) left = event.clientX - 430;
-      if (top + 570 > window.innerHeight) top = window.innerHeight - 580;
+      const previewWidth = previewEl.offsetWidth || 300;
+      const previewHeight = previewEl.offsetHeight || 420;
+
+      if (left + previewWidth > window.innerWidth) left = event.clientX - previewWidth - 10;
+      if (top + previewHeight > window.innerHeight) top = window.innerHeight - previewHeight - 10;
       if (top < 10) top = 10;
       if (left < 10) left = 10;
       previewEl.style.left = `${left}px`; previewEl.style.top = `${top}px`;
@@ -1294,7 +1285,7 @@
       return closestSlot;
     }
 
-    /* 固定枠スロット内のカード重なり計算（左上に1枚につき8pxずつずらす） */
+    /* 固定枠スロット内のカード重なり計算 */
     function getSlotPosition(slotOwnerIndex, slotIndex, cardId) {
       const table = document.getElementById('zone-table');
       const tableRect = table.getBoundingClientRect();
@@ -1306,29 +1297,29 @@
       const targetSlot = slots[slotIndex];
       if (!targetSlot) return null;
 
-      // 同じ固定枠内に重なっているカードの一覧を取得
       const placedCards = Array.from(document.querySelectorAll(`.placed-card[data-slot-owner="${slotOwnerIndex}"][data-slot-idx="${slotIndex}"]`));
       placedCards.sort((a, b) => (parseInt(a.style.zIndex) || 0) - (parseInt(b.style.zIndex) || 0));
 
       let stackIndex = placedCards.findIndex(el => el.id === cardId);
       if (stackIndex === -1) stackIndex = placedCards.length;
 
-      const offset = stackIndex * 8; // 重なるごとに左上に8pxずらす
+      const offset = stackIndex * 6;
 
       const slotRect = targetSlot.getBoundingClientRect();
+      const cardWidth = Math.min(56, slotRect.width * 0.8);
+      const cardHeight = Math.min(78, slotRect.height * 0.8);
+
       return {
-        x: slotRect.left - tableRect.left + (slotRect.width - 60) / 2 - offset,
-        y: slotRect.top - tableRect.top + (slotRect.height - 84) / 2 - offset
+        x: slotRect.left - tableRect.left + (slotRect.width - cardWidth) / 2 - offset,
+        y: slotRect.top - tableRect.top + (slotRect.height - cardHeight) / 2 - offset
       };
     }
 
-    /* 初期手札（固定カード1枚＋メインデッキから4枚＝合計5枚）の修正処理 */
     function startGame() {
       document.getElementById('deck-builder-view').style.display = 'none';
       document.getElementById('battle-view').style.display = 'flex';
       document.getElementById('header-bar').style.display = 'none';
 
-      // 手札をリセット
       document.getElementById('hand-cards').innerHTML = '';
 
       deckCards = [...mainDeck];
@@ -1342,7 +1333,6 @@
 
       createAllLockSlots();
 
-      // 全プレイヤー共通: 選択した固定カード1枚 + メインデッキのトップから4枚でスタート (計5枚)
       if (selectedSpecialCard) {
         addCardToHand(selectedSpecialCard);
       }
@@ -1463,8 +1453,8 @@
       const tableRect = table.getBoundingClientRect();
       
       const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-      const startX = e.clientX - tableRect.left - 30;
-      const startY = e.clientY - tableRect.top - 42;
+      const startX = e.clientX - tableRect.left - 25;
+      const startY = e.clientY - tableRect.top - 35;
 
       const faceDownMode = forceFaceDown || (e.button === 2);
 
@@ -1524,7 +1514,7 @@
       if (data.tapped) cardEl.classList.add('card-tapped');
 
       if (data.faceDown) {
-        cardEl.innerHTML = `<div style="font-size:10px; color:#64748b; margin-top:28px;">裏面</div>`;
+        cardEl.innerHTML = `<div style="font-size:9px; color:#64748b; margin-top:20px;">裏面</div>`;
       } else {
         cardEl.innerHTML = `<img src="${data.card.img}" alt="card">`;
       }
@@ -1532,7 +1522,6 @@
       let posX = data.x;
       let posY = data.y;
 
-      /* 固定枠のずらし配置を適用 */
       if (data.slotOwnerIndex !== null && data.slotIndex !== null) {
         const slotPos = getSlotPosition(data.slotOwnerIndex, data.slotIndex, data.id);
         if (slotPos) {
@@ -1659,7 +1648,6 @@
             return;
           }
 
-          // 「デッキに戻す」：デッキに追加後シャッフルを実施
           if (me.clientX >= returnZone.left && me.clientX <= returnZone.right && me.clientY >= returnZone.top && me.clientY <= returnZone.bottom) {
             deckCards.push(cardEl.cardDataObj);
             shuffle(deckCards);
@@ -1668,7 +1656,6 @@
             return;
           }
 
-          // 「デッキ一番下に戻す」
           if (me.clientX >= returnBottomZone.left && me.clientX <= returnBottomZone.right && me.clientY >= returnBottomZone.top && me.clientY <= returnBottomZone.bottom) {
             deckCards.unshift(cardEl.cardDataObj);
             removeBoardCard(cardEl.id);
@@ -1786,8 +1773,8 @@
 
       const table = document.getElementById('zone-table');
       const tableRect = table.getBoundingClientRect();
-      const centerX = tableRect.width / 2 - 30;
-      const centerY = tableRect.height / 2 - 42;
+      const centerX = tableRect.width / 2 - 25;
+      const centerY = tableRect.height / 2 - 35;
 
       const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
       const cardData = {
@@ -1835,8 +1822,8 @@
 
         const table = document.getElementById('zone-table');
         const tableRect = table.getBoundingClientRect();
-        const posX = e.clientX - tableRect.left - 30;
-        const posY = e.clientY - tableRect.top - 42;
+        const posX = e.clientX - tableRect.left - 25;
+        const posY = e.clientY - tableRect.top - 35;
 
         const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
         const cardData = {
@@ -1894,8 +1881,8 @@
         mEl.id = m.id;
         mEl.className = `mana-card mana-${m.color}` + (m.tapped ? ' tapped' : '');
         mEl.innerText = m.color.substring(0, 1).toUpperCase();
-        mEl.style.left = `${10 + idx * 46}px`;
-        mEl.style.top = `10px`;
+        mEl.style.left = `${10 + idx * 40}px`;
+        mEl.style.top = `8px`;
 
         let isDragging = false, startX, startY;
         let clickStartTime = 0;
@@ -1908,8 +1895,8 @@
 
           const onMM = (me) => {
             if (!isDragging) return;
-            mEl.style.left = `${me.clientX - manaZone.getBoundingClientRect().left - 21}px`;
-            mEl.style.top = `${me.clientY - manaZone.getBoundingClientRect().top - 30}px`;
+            mEl.style.left = `${me.clientX - manaZone.getBoundingClientRect().left - 18}px`;
+            mEl.style.top = `${me.clientY - manaZone.getBoundingClientRect().top - 25}px`;
           };
 
           const onMU = (me) => {
@@ -1982,7 +1969,7 @@
       const targetGy = graveyards[currentGyTab] || [];
       targetGy.forEach((card) => {
         const cEl = createCardElement(card);
-        cEl.style.height = '125px';
+        cEl.style.height = 'clamp(80px, 12vh, 125px)';
         const img = cEl.querySelector('img');
         if (img) img.style.objectFit = 'contain';
 
@@ -2013,7 +2000,7 @@
 
       searchList.forEach(card => {
         const cEl = createCardElement(card);
-        cEl.style.height = '125px';
+        cEl.style.height = 'clamp(80px, 12vh, 125px)';
         const img = cEl.querySelector('img');
         if (img) img.style.objectFit = 'contain';
 
@@ -2045,10 +2032,10 @@
       
       if (isVertical) {
         handle.style.top = offsetsVertical[stage];
-        handle.style.left = 'calc(50% - 35px)';
+        handle.style.left = 'calc(50% - 25px)';
       } else {
         handle.style.left = offsetsHorizontal[stage];
-        handle.style.top = 'calc(50% - 35px)';
+        handle.style.top = 'calc(50% - 25px)';
       }
     }
   </script>
