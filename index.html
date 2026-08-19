@@ -221,9 +221,9 @@
     }
     .btn-untap-all:hover { background: #7dd3fc; }
 
-    /* 手札・対戦中のカードサイズを小さく変更 */
+    /* 手札・対戦中のカードサイズをさらに少し小さく変更 (3.4vw / 8.5vh -> 2.7vw / 6.8vh) */
     .dummy-card {
-      width: 3.4vw; height: 8.5vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
+      width: 2.7vw; height: 6.8vh; background: #1e293b; border: 0.2vh solid #94a3b8; border-radius: 0.4vh;
       box-shadow: 0 0.2vh 0.6vh rgba(0,0,0,0.4); user-select: none; flex-shrink: 0; padding: 0; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
     }
@@ -258,12 +258,12 @@
     #deck-bottom-zone { border-color: #f59e0b; background: #451a03; color: #fde68a; }
     #graveyard-zone { border-color: #8b5cf6; background: #2e1065; color: #ddd6fe; cursor: pointer; }
 
-    #bottom-hand-panel { height: 16vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.6vh; display: flex; flex-direction: column; }
+    #bottom-hand-panel { height: 14vh; background: #0f172a; border: 0.2vh dashed #10b981; border-radius: 0.8vh; padding: 0.6vh; display: flex; flex-direction: column; }
     #hand-cards { display: flex; gap: 0.5vw; overflow-x: auto; flex: 1; align-items: center; padding-top: 0.2vh; }
     .hand-card-wrapper { display: flex; flex-direction: column; align-items: center; gap: 0.4vh; }
     
     .btn-facedown {
-      padding: 0.4vh 0.6vw; font-size: 1.2vh; border: 0.1vh solid #475569; background: #1e293b;
+      padding: 0.3vh 0.5vw; font-size: 1.1vh; border: 0.1vh solid #475569; background: #1e293b;
       color: #cbd5e1; border-radius: 0.4vh; cursor: grab; user-select: none; transition: 0.15s; font-weight: bold;
     }
     .btn-facedown:hover { background: #334155; color: #38bdf8; border-color: #38bdf8; }
@@ -277,15 +277,15 @@
     #deck-search-panel { border: 0.2vh solid #0ea5e9; height: 35%; display: none; }
     #graveyard-tray { border: 0.2vh solid #8b5cf6; flex: 1; }
 
-    /* カード固定枠（スロット）の大きさ変更：カードサイズに合わせて縮小 */
+    /* カード固定枠（スロット）の大きさ変更：カード縮小に合わせて 33vw/22vh -> 28vw/17.5vh に変更 */
     .lock-slot-container {
-      position: absolute; width: 33vw; height: 22vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
+      position: absolute; width: 28vw; height: 17.5vh; border: 0.2vh dashed #6366f1; border-radius: 0.8vh;
       background: rgba(30, 41, 59, 0.4); display: grid; grid-template-columns: repeat(7, 1fr);
-      grid-template-rows: repeat(2, 1fr); gap: 0.4vw; padding: 0.6vh; z-index: 2; pointer-events: auto;
+      grid-template-rows: repeat(2, 1fr); gap: 0.3vw; padding: 0.5vh; z-index: 2; pointer-events: auto;
     }
     .lock-slot {
-      width: 100%; height: 100%; border: 0.1vh dashed #475569; border-radius: 0.6vh;
-      display: flex; align-items: center; justify-content: center; font-size: 1.4vh; color: #64748b; text-align: center;
+      width: 100%; height: 100%; border: 0.1vh dashed #475569; border-radius: 0.5vh;
+      display: flex; align-items: center; justify-content: center; font-size: 1.2vh; color: #64748b; text-align: center;
       background: rgba(15, 23, 42, 0.3); transition: border-color 0.15s; font-weight: bold;
     }
     
@@ -1359,8 +1359,8 @@
       const slotRect = targetSlot.getBoundingClientRect();
 
       let targetCard = document.getElementById(cardId);
-      let cardWidth = targetCard ? targetCard.offsetWidth : tableRect.width * 0.034;
-      let cardHeight = targetCard ? targetCard.offsetHeight : tableRect.height * 0.085;
+      let cardWidth = targetCard ? targetCard.offsetWidth : tableRect.width * 0.027;
+      let cardHeight = targetCard ? targetCard.offsetHeight : tableRect.height * 0.068;
 
       const slotCenterX = slotRect.left + slotRect.width / 2 - tableRect.left;
       const slotCenterY = slotRect.top + slotRect.height / 2 - tableRect.top;
@@ -1509,8 +1509,8 @@
       const tableRect = table.getBoundingClientRect();
       
       const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-      const startX = e.clientX - tableRect.left - (tableRect.width * 0.017);
-      const startY = e.clientY - tableRect.top - (tableRect.height * 0.0425);
+      const startX = e.clientX - tableRect.left - (tableRect.width * 0.0135);
+      const startY = e.clientY - tableRect.top - (tableRect.height * 0.034);
 
       const faceDownMode = forceFaceDown || (e.button === 2);
 
@@ -1570,7 +1570,7 @@
       if (data.tapped) cardEl.classList.add('card-tapped');
 
       if (data.faceDown) {
-        cardEl.innerHTML = `<div style="font-size:1.2vh; color:#64748b; margin-top:2.5vh;">裏面</div>`;
+        cardEl.innerHTML = `<div style="font-size:1.1vh; color:#64748b; margin-top:2vh;">裏面</div>`;
       } else {
         cardEl.innerHTML = `<img src="${data.card.img}" alt="card">`;
       }
@@ -1829,8 +1829,8 @@
 
       const table = document.getElementById('zone-table');
       const tableRect = table.getBoundingClientRect();
-      const centerX = tableRect.width / 2 - (tableRect.width * 0.017);
-      const centerY = tableRect.height / 2 - (tableRect.height * 0.0425);
+      const centerX = tableRect.width / 2 - (tableRect.width * 0.0135);
+      const centerY = tableRect.height / 2 - (tableRect.height * 0.034);
 
       const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
       const cardData = {
@@ -1878,8 +1878,8 @@
 
         const table = document.getElementById('zone-table');
         const tableRect = table.getBoundingClientRect();
-        const posX = e.clientX - tableRect.left - (tableRect.width * 0.017);
-        const posY = e.clientY - tableRect.top - (tableRect.height * 0.0425);
+        const posX = e.clientX - tableRect.left - (tableRect.width * 0.0135);
+        const posY = e.clientY - tableRect.top - (tableRect.height * 0.034);
 
         const newCardId = 'bcard_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
         const cardData = {
