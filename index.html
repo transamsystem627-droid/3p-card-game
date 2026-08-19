@@ -275,7 +275,8 @@
     .tray-list .card-img-thumb { object-fit: contain; }
 
     #deck-search-panel { border: 0.2vh solid #0ea5e9; height: 35%; display: none; }
-    #graveyard-tray { border: 0.2vh solid #8b5cf6; flex: 1; }
+    /* 墓地をスクロールできるように調整 */
+    #graveyard-tray { border: 0.2vh solid #8b5cf6; flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
     /* カード固定枠（スロット）の大きさ変更：カード縮小に合わせて 33vw/22vh -> 28vw/17.5vh に変更 */
     .lock-slot-container {
@@ -290,8 +291,9 @@
     }
     
     #p1-lock-zone { bottom: 1vh; left: 50%; transform: translateX(-50%); }
-    #p2-lock-zone { top: 3vh; left: 1%; transform: rotate(160deg); transform-origin: center center; }
-    #p3-lock-zone { top: 3vh; right: 1%; transform: rotate(-160deg); transform-origin: center center; }
+    /* カード固定枠の位置を少し下に変更 (top: 3vh -> 7vh) */
+    #p2-lock-zone { top: 7vh; left: 1%; transform: rotate(160deg); transform-origin: center center; }
+    #p3-lock-zone { top: 7vh; right: 1%; transform: rotate(-160deg); transform-origin: center center; }
 
     .opponent-overlay-info {
       position: absolute; top: 0.8vh; background: rgba(15, 23, 42, 0.85);
@@ -306,7 +308,7 @@
       border: 0.1vh solid #334155; border-radius: 1.2vh; display: flex; flex-direction: column; justify-content: center; padding: 0.6vh 0.8vw; z-index: 20;
     }
     .bar-track-line { position: relative; width: 100%; height: 0.6vh; background: #1e293b; border-radius: 0.3vh; display: flex; justify-content: space-between; align-items: center; }
-    .bar-node { width: 0.8vw; height: 0.8vw; max-width: 1.2vh; max-height: 1.2vh; background: #475569; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 21; }
+    .bar-node { width: 0.7vw; height: 0.7vw; max-width: 1vh; max-height: 1vh; background: #475569; border-radius: 50%; cursor: pointer; transition: 0.2s; z-index: 21; }
     
     .movable-bar-handle {
       position: absolute; background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -315,12 +317,14 @@
       box-shadow: 0 0 1.2vh rgba(245, 158, 11, 0.8);
     }
     
-    #track-top { top: 3vh; left: 50%; transform: translateX(-50%); width: 18vw; height: 4vh; }
-    .bar-track-container .movable-bar-handle { width: 1.8vw; height: 8vh; top: calc(50% - 4vh); }
+    /* 上部の棒のサイズを少し小さく修正 */
+    #track-top { top: 3vh; left: 50%; transform: translateX(-50%); width: 15vw; height: 3.2vh; }
+    .bar-track-container .movable-bar-handle { width: 1.5vw; height: 6.5vh; top: calc(50% - 3.25vh); }
 
-    .bar-vertical { width: 2vw; height: 28vh; padding: 1.2vh 0.4vw; }
+    /* 縦方向の棒のサイズを少し小さく修正 */
+    .bar-vertical { width: 1.6vw; height: 22vh; padding: 1vh 0.3vw; }
     .bar-vertical .bar-track-line { width: 0.6vh; height: 100%; flex-direction: column; margin: 0 auto; }
-    .bar-vertical .movable-bar-handle { width: 4.5vw; height: 3vh; left: calc(50% - 2.25vw); top: auto; }
+    .bar-vertical .movable-bar-handle { width: 3.8vw; height: 2.5vh; left: calc(50% - 1.9vw); top: auto; }
 
     #track-left-p1 { bottom: 2vh; left: 20%; transform-origin: center center; transform: rotate(-15deg); }
     #track-right-p1 { bottom: 2vh; right: 20%; transform-origin: center center; transform: rotate(15deg); }
@@ -1100,8 +1104,8 @@
         trackTop.style.right = 'auto';
         trackTop.style.bottom = '2vh';
         trackTop.style.top = 'auto';
-        trackTop.style.width = '2vw';
-        trackTop.style.height = '28vh';
+        trackTop.style.width = '1.6vw';
+        trackTop.style.height = '22vh';
         trackTop.style.transform = 'rotate(165deg)';
 
         trackLeftP1.classList.add('bar-vertical', 'bar-flip');
@@ -1110,8 +1114,8 @@
         trackLeftP1.style.left = 'auto';
         trackLeftP1.style.bottom = '2vh';
         trackLeftP1.style.top = 'auto';
-        trackLeftP1.style.width = '2vw';
-        trackLeftP1.style.height = '28vh';
+        trackLeftP1.style.width = '1.6vw';
+        trackLeftP1.style.height = '22vh';
         trackLeftP1.style.transform = 'rotate(-165deg)';
 
         trackRightP1.style.position = 'absolute';
@@ -1119,8 +1123,8 @@
         trackRightP1.style.left = '50%';
         trackRightP1.style.right = 'auto';
         trackRightP1.style.bottom = 'auto';
-        trackRightP1.style.width = '18vw';
-        trackRightP1.style.height = '4vh';
+        trackRightP1.style.width = '15vw';
+        trackRightP1.style.height = '3.2vh';
         trackRightP1.style.transform = 'translateX(-50%)';
 
       } else if (myPlayerIndex === 2) {
@@ -1134,8 +1138,8 @@
         trackLeftP1.style.left = '50%';
         trackLeftP1.style.right = 'auto';
         trackLeftP1.style.bottom = 'auto';
-        trackLeftP1.style.width = '18vw';
-        trackLeftP1.style.height = '4vh';
+        trackLeftP1.style.width = '15vw';
+        trackLeftP1.style.height = '3.2vh';
         trackLeftP1.style.transform = 'translateX(-50%) rotate(180deg)';
 
         trackRightP1.classList.add('bar-vertical', 'bar-flip');
@@ -1144,8 +1148,8 @@
         trackRightP1.style.right = 'auto';
         trackRightP1.style.top = 'auto';
         trackRightP1.style.bottom = '2vh';
-        trackRightP1.style.width = '2vw';
-        trackRightP1.style.height = '28vh';
+        trackRightP1.style.width = '1.6vw';
+        trackRightP1.style.height = '22vh';
         trackRightP1.style.transform = 'rotate(165deg)';
 
         trackTop.classList.add('bar-vertical');
@@ -1154,8 +1158,8 @@
         trackTop.style.left = 'auto';
         trackTop.style.top = 'auto';
         trackTop.style.bottom = '2vh';
-        trackTop.style.width = '2vw';
-        trackTop.style.height = '28vh';
+        trackTop.style.width = '1.6vw';
+        trackTop.style.height = '22vh';
         trackTop.style.transform = 'rotate(15deg)';
 
       } else {
@@ -1168,8 +1172,8 @@
         trackTop.style.left = '50%';
         trackTop.style.right = 'auto';
         trackTop.style.bottom = 'auto';
-        trackTop.style.width = '18vw';
-        trackTop.style.height = '4vh';
+        trackTop.style.width = '15vw';
+        trackTop.style.height = '3.2vh';
         trackTop.style.transform = 'translateX(-50%)';
 
         trackLeftP1.classList.add('bar-vertical');
@@ -1178,8 +1182,8 @@
         trackLeftP1.style.left = '20%';
         trackLeftP1.style.right = 'auto';
         trackLeftP1.style.top = 'auto';
-        trackLeftP1.style.width = '2vw';
-        trackLeftP1.style.height = '28vh';
+        trackLeftP1.style.width = '1.6vw';
+        trackLeftP1.style.height = '22vh';
         trackLeftP1.style.transform = 'rotate(-15deg)';
 
         trackRightP1.classList.add('bar-vertical');
@@ -1188,8 +1192,8 @@
         trackRightP1.style.right = '20%';
         trackRightP1.style.left = 'auto';
         trackRightP1.style.top = 'auto';
-        trackRightP1.style.width = '2vw';
-        trackRightP1.style.height = '28vh';
+        trackRightP1.style.width = '1.6vw';
+        trackRightP1.style.height = '22vh';
         trackRightP1.style.transform = 'rotate(15deg)';
       }
 
@@ -2089,10 +2093,10 @@
       
       if (isVertical) {
         handle.style.top = offsetsVertical[stage];
-        handle.style.left = 'calc(50% - 2.25vw)';
+        handle.style.left = 'calc(50% - 1.9vw)';
       } else {
         handle.style.left = offsetsHorizontal[stage];
-        handle.style.top = 'calc(50% - 4vh)';
+        handle.style.top = 'calc(50% - 3.25vh)';
       }
     }
   </script>
